@@ -84,11 +84,11 @@ RESPONSE GUIDELINES:
     },
     "data_sources": {
         "tables": [
-            {"identifier": "zivile.telco.network_telemetry"},
             {"identifier": "zivile.telco.capacity_forecasts"},
-            {"identifier": "zivile.telco.incidents"},
-            {"identifier": "zivile.telco.customers"},
             {"identifier": "zivile.telco.customer_usage"},
+            {"identifier": "zivile.telco.customers"},
+            {"identifier": "zivile.telco.incidents"},
+            {"identifier": "zivile.telco.network_telemetry"},
             {"identifier": "zivile.telco.poi_infrastructure"}
         ]
     }
