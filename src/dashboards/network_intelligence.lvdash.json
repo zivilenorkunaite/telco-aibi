@@ -25,7 +25,7 @@
       "name": "utilization_by_tech",
       "displayName": "Utilization by Technology",
       "queryLines": [
-        "SELECT technology_type, ROUND(AVG(utilization_pct), 1) as avg_utilization FROM zivile.telco.network_telemetry GROUP BY technology_type ORDER BY avg_utilization DESC"
+        "SELECT technology_type, ROUND(AVG(utilization_pct), 1) as avg_utilization, ROUND(AVG(avg_latency_ms), 1) as avg_latency FROM zivile.telco.network_telemetry GROUP BY technology_type ORDER BY avg_utilization DESC"
       ]
     },
     {
@@ -74,7 +74,35 @@
       "name": "customer_kpis",
       "displayName": "Customer KPIs",
       "queryLines": [
-        "SELECT COUNT(*) as total_records, ROUND(AVG(speed_achievement_pct), 1) as avg_speed_pct, ROUND(AVG(download_gb), 1) as avg_download, ROUND(AVG(streaming_hours), 1) as avg_streaming, ROUND(AVG(gaming_hours), 1) as avg_gaming FROM zivile.telco.customer_usage"
+        "SELECT COUNT(*) as total_records, ROUND(AVG(speed_achievement_pct), 1) as avg_speed_pct, ROUND(AVG(download_gb), 1) as avg_download, ROUND(SUM(download_gb), 0) as total_download_tb FROM zivile.telco.customer_usage"
+      ]
+    },
+    {
+      "name": "speed_tier_distribution",
+      "displayName": "Speed Tier Distribution",
+      "queryLines": [
+        "SELECT CASE WHEN speed_achievement_pct >= 90 THEN 'Excellent (90%+)' WHEN speed_achievement_pct >= 75 THEN 'Good (75-90%)' WHEN speed_achievement_pct >= 50 THEN 'Fair (50-75%)' ELSE 'Poor (<50%)' END as speed_tier, COUNT(*) as record_count FROM zivile.telco.customer_usage GROUP BY 1"
+      ]
+    },
+    {
+      "name": "customers_ds",
+      "displayName": "Customers",
+      "queryLines": [
+        "SELECT * FROM zivile.telco.customers"
+      ]
+    },
+    {
+      "name": "plan_performance",
+      "displayName": "Plan Performance",
+      "queryLines": [
+        "SELECT c.plan_tier, ROUND(AVG(u.speed_achievement_pct), 1) as avg_speed_pct, ROUND(AVG(u.download_gb), 1) as avg_download, COUNT(DISTINCT c.customer_id) as customer_count FROM zivile.telco.customers c JOIN zivile.telco.customer_usage u ON c.customer_id = u.customer_id WHERE c.is_active = true GROUP BY c.plan_tier ORDER BY avg_download DESC"
+      ]
+    },
+    {
+      "name": "churn_by_tech",
+      "displayName": "Churn Risk by Technology",
+      "queryLines": [
+        "SELECT technology_type, ROUND(AVG(churn_risk_score) * 100, 1) as avg_churn_risk, COUNT(*) as customer_count FROM zivile.telco.customers WHERE is_active = true GROUP BY technology_type ORDER BY avg_churn_risk DESC"
       ]
     }
   ],
@@ -91,12 +119,7 @@
                 "name": "main_query",
                 "query": {
                   "datasetName": "network_kpis",
-                  "fields": [
-                    {
-                      "name": "total_pois",
-                      "expression": "`total_pois`"
-                    }
-                  ],
+                  "fields": [{"name": "total_pois", "expression": "`total_pois`"}],
                   "disaggregated": true
                 }
               }
@@ -104,24 +127,11 @@
             "spec": {
               "version": 2,
               "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "total_pois",
-                  "displayName": "Total POIs"
-                }
-              },
-              "frame": {
-                "title": "Total POIs",
-                "showTitle": true
-              }
+              "encodings": {"value": {"fieldName": "total_pois", "displayName": "Total POIs"}},
+              "frame": {"title": "Total POIs", "showTitle": true}
             }
           },
-          "position": {
-            "x": 0,
-            "y": 0,
-            "width": 1,
-            "height": 2
-          }
+          "position": {"x": 0, "y": 0, "width": 1, "height": 2}
         },
         {
           "widget": {
@@ -131,12 +141,7 @@
                 "name": "main_query",
                 "query": {
                   "datasetName": "network_kpis",
-                  "fields": [
-                    {
-                      "name": "avg_utilization",
-                      "expression": "`avg_utilization`"
-                    }
-                  ],
+                  "fields": [{"name": "avg_utilization", "expression": "`avg_utilization`"}],
                   "disaggregated": true
                 }
               }
@@ -144,24 +149,11 @@
             "spec": {
               "version": 2,
               "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "avg_utilization",
-                  "displayName": "Avg Utilization %"
-                }
-              },
-              "frame": {
-                "title": "Avg Utilization %",
-                "showTitle": true
-              }
+              "encodings": {"value": {"fieldName": "avg_utilization", "displayName": "Avg Utilization %"}},
+              "frame": {"title": "Avg Utilization %", "showTitle": true}
             }
           },
-          "position": {
-            "x": 1,
-            "y": 0,
-            "width": 1,
-            "height": 2
-          }
+          "position": {"x": 1, "y": 0, "width": 1, "height": 2}
         },
         {
           "widget": {
@@ -171,12 +163,7 @@
                 "name": "main_query",
                 "query": {
                   "datasetName": "network_kpis",
-                  "fields": [
-                    {
-                      "name": "critical_count",
-                      "expression": "`critical_count`"
-                    }
-                  ],
+                  "fields": [{"name": "critical_count", "expression": "`critical_count`"}],
                   "disaggregated": true
                 }
               }
@@ -184,24 +171,11 @@
             "spec": {
               "version": 2,
               "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "critical_count",
-                  "displayName": "Critical"
-                }
-              },
-              "frame": {
-                "title": "🔴 Critical",
-                "showTitle": true
-              }
+              "encodings": {"value": {"fieldName": "critical_count", "displayName": "Critical"}},
+              "frame": {"title": "🔴 Critical", "showTitle": true}
             }
           },
-          "position": {
-            "x": 2,
-            "y": 0,
-            "width": 1,
-            "height": 2
-          }
+          "position": {"x": 2, "y": 0, "width": 1, "height": 2}
         },
         {
           "widget": {
@@ -211,12 +185,7 @@
                 "name": "main_query",
                 "query": {
                   "datasetName": "network_kpis",
-                  "fields": [
-                    {
-                      "name": "warning_count",
-                      "expression": "`warning_count`"
-                    }
-                  ],
+                  "fields": [{"name": "warning_count", "expression": "`warning_count`"}],
                   "disaggregated": true
                 }
               }
@@ -224,24 +193,11 @@
             "spec": {
               "version": 2,
               "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "warning_count",
-                  "displayName": "Warning"
-                }
-              },
-              "frame": {
-                "title": "🟡 Warning",
-                "showTitle": true
-              }
+              "encodings": {"value": {"fieldName": "warning_count", "displayName": "Warning"}},
+              "frame": {"title": "🟡 Warning", "showTitle": true}
             }
           },
-          "position": {
-            "x": 3,
-            "y": 0,
-            "width": 1,
-            "height": 2
-          }
+          "position": {"x": 3, "y": 0, "width": 1, "height": 2}
         },
         {
           "widget": {
@@ -251,12 +207,7 @@
                 "name": "main_query",
                 "query": {
                   "datasetName": "network_kpis",
-                  "fields": [
-                    {
-                      "name": "avg_latency",
-                      "expression": "`avg_latency`"
-                    }
-                  ],
+                  "fields": [{"name": "avg_latency", "expression": "`avg_latency`"}],
                   "disaggregated": true
                 }
               }
@@ -264,24 +215,11 @@
             "spec": {
               "version": 2,
               "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "avg_latency",
-                  "displayName": "Avg Latency (ms)"
-                }
-              },
-              "frame": {
-                "title": "Avg Latency (ms)",
-                "showTitle": true
-              }
+              "encodings": {"value": {"fieldName": "avg_latency", "displayName": "Avg Latency (ms)"}},
+              "frame": {"title": "Avg Latency (ms)", "showTitle": true}
             }
           },
-          "position": {
-            "x": 4,
-            "y": 0,
-            "width": 1,
-            "height": 2
-          }
+          "position": {"x": 4, "y": 0, "width": 1, "height": 2}
         },
         {
           "widget": {
@@ -291,12 +229,7 @@
                 "name": "main_query",
                 "query": {
                   "datasetName": "network_kpis",
-                  "fields": [
-                    {
-                      "name": "total_connections",
-                      "expression": "`total_connections`"
-                    }
-                  ],
+                  "fields": [{"name": "total_connections", "expression": "`total_connections`"}],
                   "disaggregated": true
                 }
               }
@@ -304,24 +237,11 @@
             "spec": {
               "version": 2,
               "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "total_connections",
-                  "displayName": "Connections"
-                }
-              },
-              "frame": {
-                "title": "Active Connections",
-                "showTitle": true
-              }
+              "encodings": {"value": {"fieldName": "total_connections", "displayName": "Connections"}},
+              "frame": {"title": "Active Connections", "showTitle": true}
             }
           },
-          "position": {
-            "x": 5,
-            "y": 0,
-            "width": 1,
-            "height": 2
-          }
+          "position": {"x": 5, "y": 0, "width": 1, "height": 2}
         },
         {
           "widget": {
@@ -332,14 +252,8 @@
                 "query": {
                   "datasetName": "utilization_by_state",
                   "fields": [
-                    {
-                      "name": "state",
-                      "expression": "`state`"
-                    },
-                    {
-                      "name": "avg_utilization",
-                      "expression": "`avg_utilization`"
-                    }
+                    {"name": "state", "expression": "`state`"},
+                    {"name": "avg_utilization", "expression": "`avg_utilization`"}
                   ],
                   "disaggregated": true
                 }
@@ -349,37 +263,13 @@
               "version": 3,
               "widgetType": "bar",
               "encodings": {
-                "x": {
-                  "fieldName": "avg_utilization",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Avg Utilization %"
-                },
-                "y": {
-                  "fieldName": "state",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "x",
-                      "direction": "descending"
-                    }
-                  },
-                  "displayName": "State"
-                }
+                "x": {"fieldName": "avg_utilization", "scale": {"type": "quantitative"}, "displayName": "Avg Utilization %"},
+                "y": {"fieldName": "state", "scale": {"type": "categorical", "sort": {"by": "x", "direction": "descending"}}, "displayName": "State"}
               },
-              "frame": {
-                "title": "Utilization by State",
-                "showTitle": true
-              }
+              "frame": {"title": "Utilization by State", "showTitle": true}
             }
           },
-          "position": {
-            "x": 0,
-            "y": 2,
-            "width": 3,
-            "height": 4
-          }
+          "position": {"x": 0, "y": 2, "width": 3, "height": 4}
         },
         {
           "widget": {
@@ -390,14 +280,8 @@
                 "query": {
                   "datasetName": "utilization_by_tech",
                   "fields": [
-                    {
-                      "name": "technology_type",
-                      "expression": "`technology_type`"
-                    },
-                    {
-                      "name": "avg_utilization",
-                      "expression": "`avg_utilization`"
-                    }
+                    {"name": "technology_type", "expression": "`technology_type`"},
+                    {"name": "avg_utilization", "expression": "`avg_utilization`"}
                   ],
                   "disaggregated": true
                 }
@@ -407,37 +291,13 @@
               "version": 3,
               "widgetType": "bar",
               "encodings": {
-                "x": {
-                  "fieldName": "avg_utilization",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Avg Utilization %"
-                },
-                "y": {
-                  "fieldName": "technology_type",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "x",
-                      "direction": "descending"
-                    }
-                  },
-                  "displayName": "Technology"
-                }
+                "x": {"fieldName": "avg_utilization", "scale": {"type": "quantitative"}, "displayName": "Avg Utilization %"},
+                "y": {"fieldName": "technology_type", "scale": {"type": "categorical", "sort": {"by": "x", "direction": "descending"}}, "displayName": "Technology"}
               },
-              "frame": {
-                "title": "Utilization by Technology",
-                "showTitle": true
-              }
+              "frame": {"title": "Utilization by Technology", "showTitle": true}
             }
           },
-          "position": {
-            "x": 3,
-            "y": 2,
-            "width": 3,
-            "height": 4
-          }
+          "position": {"x": 3, "y": 2, "width": 3, "height": 4}
         },
         {
           "widget": {
@@ -448,14 +308,8 @@
                 "query": {
                   "datasetName": "hourly_trend",
                   "fields": [
-                    {
-                      "name": "hour",
-                      "expression": "`hour`"
-                    },
-                    {
-                      "name": "avg_utilization",
-                      "expression": "`avg_utilization`"
-                    }
+                    {"name": "hour", "expression": "`hour`"},
+                    {"name": "avg_utilization", "expression": "`avg_utilization`"}
                   ],
                   "disaggregated": true
                 }
@@ -465,33 +319,13 @@
               "version": 3,
               "widgetType": "area",
               "encodings": {
-                "x": {
-                  "fieldName": "hour",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Hour of Day"
-                },
-                "y": {
-                  "fieldName": "avg_utilization",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Avg Utilization %"
-                }
+                "x": {"fieldName": "hour", "scale": {"type": "quantitative"}, "displayName": "Hour of Day"},
+                "y": {"fieldName": "avg_utilization", "scale": {"type": "quantitative"}, "displayName": "Avg Utilization %"}
               },
-              "frame": {
-                "title": "Peak Hour Utilization Trend",
-                "showTitle": true
-              }
+              "frame": {"title": "Peak Hour Utilization Trend", "showTitle": true}
             }
           },
-          "position": {
-            "x": 0,
-            "y": 6,
-            "width": 6,
-            "height": 4
-          }
+          "position": {"x": 0, "y": 6, "width": 6, "height": 4}
         },
         {
           "widget": {
@@ -502,18 +336,9 @@
                 "query": {
                   "datasetName": "network_telemetry_ds",
                   "fields": [
-                    {
-                      "name": "suburb",
-                      "expression": "`suburb`"
-                    },
-                    {
-                      "name": "congestion_status",
-                      "expression": "`congestion_status`"
-                    },
-                    {
-                      "name": "count(*)",
-                      "expression": "COUNT(*)"
-                    }
+                    {"name": "suburb", "expression": "`suburb`"},
+                    {"name": "congestion_status", "expression": "`congestion_status`"},
+                    {"name": "count(*)", "expression": "COUNT(*)"}
                   ],
                   "disaggregated": false
                 }
@@ -523,43 +348,14 @@
               "version": 3,
               "widgetType": "bar",
               "encodings": {
-                "x": {
-                  "fieldName": "suburb",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "y-reversed"
-                    }
-                  },
-                  "displayName": "Suburb"
-                },
-                "y": {
-                  "fieldName": "count(*)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Count"
-                },
-                "color": {
-                  "fieldName": "congestion_status",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "displayName": "Status"
-                }
+                "x": {"fieldName": "suburb", "scale": {"type": "categorical", "sort": {"by": "y-reversed"}}, "displayName": "Suburb"},
+                "y": {"fieldName": "count(*)", "scale": {"type": "quantitative"}, "displayName": "Count"},
+                "color": {"fieldName": "congestion_status", "scale": {"type": "categorical"}, "displayName": "Status"}
               },
-              "frame": {
-                "title": "Congestion Status by Suburb",
-                "showTitle": true
-              }
+              "frame": {"title": "Congestion Status by Suburb", "showTitle": true}
             }
           },
-          "position": {
-            "x": 0,
-            "y": 10,
-            "width": 6,
-            "height": 4
-          }
+          "position": {"x": 0, "y": 10, "width": 6, "height": 4}
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS"
@@ -571,303 +367,50 @@
         {
           "widget": {
             "name": "counter_high_risk",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "capacity_kpis",
-                  "fields": [
-                    {
-                      "name": "high_risk_count",
-                      "expression": "`high_risk_count`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "high_risk_count",
-                  "displayName": "High Risk POIs"
-                }
-              },
-              "frame": {
-                "title": "🔴 High Risk POIs",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "capacity_kpis", "fields": [{"name": "high_risk_count", "expression": "`high_risk_count`"}], "disaggregated": true}}],
+            "spec": {"version": 2, "widgetType": "counter", "encodings": {"value": {"fieldName": "high_risk_count", "displayName": "High Risk POIs"}}, "frame": {"title": "🔴 High Risk POIs", "showTitle": true}}
           },
-          "position": {
-            "x": 0,
-            "y": 0,
-            "width": 2,
-            "height": 2
-          }
+          "position": {"x": 0, "y": 0, "width": 2, "height": 2}
         },
         {
           "widget": {
             "name": "counter_total_upgrade_cost",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "capacity_kpis",
-                  "fields": [
-                    {
-                      "name": "total_upgrade_cost",
-                      "expression": "`total_upgrade_cost`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "total_upgrade_cost",
-                  "displayName": "Upgrade Cost (AUD)"
-                }
-              },
-              "frame": {
-                "title": "💰 Total Upgrade Cost",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "capacity_kpis", "fields": [{"name": "total_upgrade_cost", "expression": "`total_upgrade_cost`"}], "disaggregated": true}}],
+            "spec": {"version": 2, "widgetType": "counter", "encodings": {"value": {"fieldName": "total_upgrade_cost", "displayName": "Upgrade Cost (AUD)"}}, "frame": {"title": "💰 Total Upgrade Cost", "showTitle": true}}
           },
-          "position": {
-            "x": 2,
-            "y": 0,
-            "width": 2,
-            "height": 2
-          }
+          "position": {"x": 2, "y": 0, "width": 2, "height": 2}
         },
         {
           "widget": {
             "name": "counter_avg_projected",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "capacity_kpis",
-                  "fields": [
-                    {
-                      "name": "avg_projected_util",
-                      "expression": "`avg_projected_util`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "avg_projected_util",
-                  "displayName": "Projected Util %"
-                }
-              },
-              "frame": {
-                "title": "📈 Avg Projected Util %",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "capacity_kpis", "fields": [{"name": "avg_projected_util", "expression": "`avg_projected_util`"}], "disaggregated": true}}],
+            "spec": {"version": 2, "widgetType": "counter", "encodings": {"value": {"fieldName": "avg_projected_util", "displayName": "Projected Util %"}}, "frame": {"title": "📈 Avg Projected Util %", "showTitle": true}}
           },
-          "position": {
-            "x": 4,
-            "y": 0,
-            "width": 2,
-            "height": 2
-          }
+          "position": {"x": 4, "y": 0, "width": 2, "height": 2}
         },
         {
           "widget": {
             "name": "chart_risk_by_suburb",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "capacity_forecasts_ds",
-                  "fields": [
-                    {
-                      "name": "suburb",
-                      "expression": "`suburb`"
-                    },
-                    {
-                      "name": "projected_utilization_pct",
-                      "expression": "`projected_utilization_pct`"
-                    },
-                    {
-                      "name": "risk_score",
-                      "expression": "`risk_score`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "bar",
-              "encodings": {
-                "x": {
-                  "fieldName": "projected_utilization_pct",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Projected Utilization %"
-                },
-                "y": {
-                  "fieldName": "suburb",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "x",
-                      "direction": "descending"
-                    }
-                  },
-                  "displayName": "Suburb"
-                },
-                "color": {
-                  "fieldName": "risk_score",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "displayName": "Risk"
-                }
-              },
-              "frame": {
-                "title": "6-Month Projected Utilization by Suburb",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "capacity_forecasts_ds", "fields": [{"name": "suburb", "expression": "`suburb`"}, {"name": "projected_utilization_pct", "expression": "`projected_utilization_pct`"}, {"name": "risk_score", "expression": "`risk_score`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "projected_utilization_pct", "scale": {"type": "quantitative"}, "displayName": "Projected Utilization %"}, "y": {"fieldName": "suburb", "scale": {"type": "categorical", "sort": {"by": "x", "direction": "descending"}}, "displayName": "Suburb"}, "color": {"fieldName": "risk_score", "scale": {"type": "categorical"}, "displayName": "Risk"}}, "frame": {"title": "6-Month Projected Utilization by Suburb", "showTitle": true}}
           },
-          "position": {
-            "x": 0,
-            "y": 2,
-            "width": 6,
-            "height": 6
-          }
+          "position": {"x": 0, "y": 2, "width": 6, "height": 6}
         },
         {
           "widget": {
             "name": "chart_upgrade_cost_by_tech",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "capacity_forecasts_ds",
-                  "fields": [
-                    {
-                      "name": "technology_type",
-                      "expression": "`technology_type`"
-                    },
-                    {
-                      "name": "sum(estimated_upgrade_cost_aud)",
-                      "expression": "SUM(`estimated_upgrade_cost_aud`)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "bar",
-              "encodings": {
-                "x": {
-                  "fieldName": "sum(estimated_upgrade_cost_aud)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Upgrade Cost (AUD)"
-                },
-                "y": {
-                  "fieldName": "technology_type",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "x",
-                      "direction": "descending"
-                    }
-                  },
-                  "displayName": "Technology"
-                }
-              },
-              "frame": {
-                "title": "Upgrade Costs by Technology",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "capacity_forecasts_ds", "fields": [{"name": "technology_type", "expression": "`technology_type`"}, {"name": "sum(estimated_upgrade_cost_aud)", "expression": "SUM(`estimated_upgrade_cost_aud`)"}], "disaggregated": false}}],
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "sum(estimated_upgrade_cost_aud)", "scale": {"type": "quantitative"}, "displayName": "Upgrade Cost (AUD)"}, "y": {"fieldName": "technology_type", "scale": {"type": "categorical", "sort": {"by": "x", "direction": "descending"}}, "displayName": "Technology"}}, "frame": {"title": "Upgrade Costs by Technology", "showTitle": true}}
           },
-          "position": {
-            "x": 0,
-            "y": 8,
-            "width": 3,
-            "height": 4
-          }
+          "position": {"x": 0, "y": 8, "width": 3, "height": 4}
         },
         {
           "widget": {
             "name": "chart_risk_distribution",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "capacity_forecasts_ds",
-                  "fields": [
-                    {
-                      "name": "risk_score",
-                      "expression": "`risk_score`"
-                    },
-                    {
-                      "name": "count(*)",
-                      "expression": "COUNT(*)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "bar",
-              "encodings": {
-                "x": {
-                  "fieldName": "risk_score",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "displayName": "Risk Score"
-                },
-                "y": {
-                  "fieldName": "count(*)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "POI Count"
-                }
-              },
-              "frame": {
-                "title": "Risk Score Distribution",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "capacity_forecasts_ds", "fields": [{"name": "risk_score", "expression": "`risk_score`"}, {"name": "count(*)", "expression": "COUNT(*)"}], "disaggregated": false}}],
+            "spec": {"version": 3, "widgetType": "pie", "encodings": {"angle": {"fieldName": "count(*)", "displayName": "POI Count"}, "color": {"fieldName": "risk_score", "scale": {"type": "categorical"}, "displayName": "Risk Score"}}, "frame": {"title": "Risk Score Distribution", "showTitle": true}}
           },
-          "position": {
-            "x": 3,
-            "y": 8,
-            "width": 3,
-            "height": 4
-          }
+          "position": {"x": 3, "y": 8, "width": 3, "height": 4}
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS"
@@ -879,299 +422,50 @@
         {
           "widget": {
             "name": "counter_total_incidents",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "incidents_kpis",
-                  "fields": [
-                    {
-                      "name": "total_incidents",
-                      "expression": "`total_incidents`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "total_incidents",
-                  "displayName": "Total Incidents"
-                }
-              },
-              "frame": {
-                "title": "Total Incidents",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "incidents_kpis", "fields": [{"name": "total_incidents", "expression": "`total_incidents`"}], "disaggregated": true}}],
+            "spec": {"version": 2, "widgetType": "counter", "encodings": {"value": {"fieldName": "total_incidents", "displayName": "Total Incidents"}}, "frame": {"title": "Total Incidents", "showTitle": true}}
           },
-          "position": {
-            "x": 0,
-            "y": 0,
-            "width": 2,
-            "height": 2
-          }
+          "position": {"x": 0, "y": 0, "width": 2, "height": 2}
         },
         {
           "widget": {
             "name": "counter_customers_affected",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "incidents_kpis",
-                  "fields": [
-                    {
-                      "name": "total_affected",
-                      "expression": "`total_affected`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "total_affected",
-                  "displayName": "Customers Affected"
-                }
-              },
-              "frame": {
-                "title": "Customers Affected",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "incidents_kpis", "fields": [{"name": "total_affected", "expression": "`total_affected`"}], "disaggregated": true}}],
+            "spec": {"version": 2, "widgetType": "counter", "encodings": {"value": {"fieldName": "total_affected", "displayName": "Customers Affected"}}, "frame": {"title": "Customers Affected", "showTitle": true}}
           },
-          "position": {
-            "x": 2,
-            "y": 0,
-            "width": 2,
-            "height": 2
-          }
+          "position": {"x": 2, "y": 0, "width": 2, "height": 2}
         },
         {
           "widget": {
             "name": "counter_avg_duration",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "incidents_kpis",
-                  "fields": [
-                    {
-                      "name": "avg_duration",
-                      "expression": "`avg_duration`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "avg_duration",
-                  "displayName": "Avg Duration (hrs)"
-                }
-              },
-              "frame": {
-                "title": "Avg Duration (hrs)",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "incidents_kpis", "fields": [{"name": "avg_duration", "expression": "`avg_duration`"}], "disaggregated": true}}],
+            "spec": {"version": 2, "widgetType": "counter", "encodings": {"value": {"fieldName": "avg_duration", "displayName": "Avg Duration (hrs)"}}, "frame": {"title": "Avg Duration (hrs)", "showTitle": true}}
           },
-          "position": {
-            "x": 4,
-            "y": 0,
-            "width": 2,
-            "height": 2
-          }
+          "position": {"x": 4, "y": 0, "width": 2, "height": 2}
         },
         {
           "widget": {
             "name": "chart_incidents_by_type",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "incidents_ds",
-                  "fields": [
-                    {
-                      "name": "incident_type",
-                      "expression": "`incident_type`"
-                    },
-                    {
-                      "name": "count(*)",
-                      "expression": "COUNT(*)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "bar",
-              "encodings": {
-                "x": {
-                  "fieldName": "count(*)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Count"
-                },
-                "y": {
-                  "fieldName": "incident_type",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "x",
-                      "direction": "descending"
-                    }
-                  },
-                  "displayName": "Incident Type"
-                }
-              },
-              "frame": {
-                "title": "Incidents by Type",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "incidents_ds", "fields": [{"name": "incident_type", "expression": "`incident_type`"}, {"name": "count(*)", "expression": "COUNT(*)"}], "disaggregated": false}}],
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "count(*)", "scale": {"type": "quantitative"}, "displayName": "Count"}, "y": {"fieldName": "incident_type", "scale": {"type": "categorical", "sort": {"by": "x", "direction": "descending"}}, "displayName": "Incident Type"}}, "frame": {"title": "Incidents by Type", "showTitle": true}}
           },
-          "position": {
-            "x": 0,
-            "y": 2,
-            "width": 3,
-            "height": 4
-          }
+          "position": {"x": 0, "y": 2, "width": 3, "height": 4}
         },
         {
           "widget": {
             "name": "chart_incidents_by_severity",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "incidents_ds",
-                  "fields": [
-                    {
-                      "name": "severity",
-                      "expression": "`severity`"
-                    },
-                    {
-                      "name": "count(*)",
-                      "expression": "COUNT(*)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "bar",
-              "encodings": {
-                "x": {
-                  "fieldName": "count(*)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Count"
-                },
-                "y": {
-                  "fieldName": "severity",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "displayName": "Severity"
-                }
-              },
-              "frame": {
-                "title": "Incidents by Severity",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "incidents_ds", "fields": [{"name": "severity", "expression": "`severity`"}, {"name": "count(*)", "expression": "COUNT(*)"}], "disaggregated": false}}],
+            "spec": {"version": 3, "widgetType": "pie", "encodings": {"angle": {"fieldName": "count(*)", "displayName": "Count"}, "color": {"fieldName": "severity", "scale": {"type": "categorical"}, "displayName": "Severity"}}, "frame": {"title": "Incidents by Severity", "showTitle": true}}
           },
-          "position": {
-            "x": 3,
-            "y": 2,
-            "width": 3,
-            "height": 4
-          }
+          "position": {"x": 3, "y": 2, "width": 3, "height": 4}
         },
         {
           "widget": {
             "name": "chart_incidents_over_time",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "incidents_ds",
-                  "fields": [
-                    {
-                      "name": "severity",
-                      "expression": "`severity`"
-                    },
-                    {
-                      "name": "monthly(incident_time)",
-                      "expression": "DATE_TRUNC(\"MONTH\", `incident_time`)"
-                    },
-                    {
-                      "name": "count(*)",
-                      "expression": "COUNT(*)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "bar",
-              "encodings": {
-                "x": {
-                  "fieldName": "monthly(incident_time)",
-                  "scale": {
-                    "type": "temporal"
-                  },
-                  "displayName": "Month"
-                },
-                "y": {
-                  "fieldName": "count(*)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Count"
-                },
-                "color": {
-                  "fieldName": "severity",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "displayName": "Severity"
-                }
-              },
-              "frame": {
-                "title": "Incidents Over Time by Severity",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "incidents_ds", "fields": [{"name": "severity", "expression": "`severity`"}, {"name": "monthly(incident_time)", "expression": "DATE_TRUNC(\"MONTH\", `incident_time`)"}, {"name": "count(*)", "expression": "COUNT(*)"}], "disaggregated": false}}],
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "monthly(incident_time)", "scale": {"type": "temporal"}, "displayName": "Month"}, "y": {"fieldName": "count(*)", "scale": {"type": "quantitative"}, "displayName": "Count"}, "color": {"fieldName": "severity", "scale": {"type": "categorical"}, "displayName": "Severity"}}, "frame": {"title": "Incidents Over Time by Severity", "showTitle": true}}
           },
-          "position": {
-            "x": 0,
-            "y": 6,
-            "width": 6,
-            "height": 4
-          }
+          "position": {"x": 0, "y": 6, "width": 6, "height": 4}
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS"
@@ -1183,338 +477,58 @@
         {
           "widget": {
             "name": "counter_total_usage_records",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "customer_kpis",
-                  "fields": [
-                    {
-                      "name": "total_records",
-                      "expression": "`total_records`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "total_records",
-                  "displayName": "Usage Records"
-                }
-              },
-              "frame": {
-                "title": "Total Usage Records",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "customer_kpis", "fields": [{"name": "total_records", "expression": "`total_records`"}], "disaggregated": true}}],
+            "spec": {"version": 2, "widgetType": "counter", "encodings": {"value": {"fieldName": "total_records", "displayName": "Usage Records"}}, "frame": {"title": "Total Usage Records", "showTitle": true}}
           },
-          "position": {
-            "x": 0,
-            "y": 0,
-            "width": 2,
-            "height": 2
-          }
+          "position": {"x": 0, "y": 0, "width": 2, "height": 2}
         },
         {
           "widget": {
             "name": "counter_avg_speed_achievement",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "customer_kpis",
-                  "fields": [
-                    {
-                      "name": "avg_speed_pct",
-                      "expression": "`avg_speed_pct`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "avg_speed_pct",
-                  "displayName": "Speed Achievement %"
-                }
-              },
-              "frame": {
-                "title": "Avg Speed Achievement %",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "customer_kpis", "fields": [{"name": "avg_speed_pct", "expression": "`avg_speed_pct`"}], "disaggregated": true}}],
+            "spec": {"version": 2, "widgetType": "counter", "encodings": {"value": {"fieldName": "avg_speed_pct", "displayName": "Speed Achievement %"}}, "frame": {"title": "Avg Speed Achievement %", "showTitle": true}}
           },
-          "position": {
-            "x": 2,
-            "y": 0,
-            "width": 2,
-            "height": 2
-          }
+          "position": {"x": 2, "y": 0, "width": 2, "height": 2}
         },
         {
           "widget": {
             "name": "counter_avg_download",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "customer_kpis",
-                  "fields": [
-                    {
-                      "name": "avg_download",
-                      "expression": "`avg_download`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "avg_download",
-                  "displayName": "Avg Download (GB)"
-                }
-              },
-              "frame": {
-                "title": "Avg Daily Download (GB)",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "customer_kpis", "fields": [{"name": "avg_download", "expression": "`avg_download`"}], "disaggregated": true}}],
+            "spec": {"version": 2, "widgetType": "counter", "encodings": {"value": {"fieldName": "avg_download", "displayName": "Avg Download (GB)"}}, "frame": {"title": "Avg Daily Download (GB)", "showTitle": true}}
           },
-          "position": {
-            "x": 4,
-            "y": 0,
-            "width": 2,
-            "height": 2
-          }
+          "position": {"x": 4, "y": 0, "width": 2, "height": 2}
         },
         {
           "widget": {
-            "name": "chart_speed_by_day",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "customer_usage_ds",
-                  "fields": [
-                    {
-                      "name": "day_of_week",
-                      "expression": "`day_of_week`"
-                    },
-                    {
-                      "name": "avg(speed_achievement_pct)",
-                      "expression": "AVG(`speed_achievement_pct`)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "bar",
-              "encodings": {
-                "x": {
-                  "fieldName": "day_of_week",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "displayName": "Day of Week"
-                },
-                "y": {
-                  "fieldName": "avg(speed_achievement_pct)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Avg Speed Achievement %"
-                }
-              },
-              "frame": {
-                "title": "Speed Achievement by Day of Week",
-                "showTitle": true
-              }
-            }
+            "name": "chart_speed_tier_distribution",
+            "queries": [{"name": "main_query", "query": {"datasetName": "speed_tier_distribution", "fields": [{"name": "speed_tier", "expression": "`speed_tier`"}, {"name": "record_count", "expression": "`record_count`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "pie", "encodings": {"angle": {"fieldName": "record_count", "displayName": "Count"}, "color": {"fieldName": "speed_tier", "scale": {"type": "categorical"}, "displayName": "Speed Tier"}}, "frame": {"title": "Speed Achievement Distribution", "showTitle": true}}
           },
-          "position": {
-            "x": 0,
-            "y": 2,
-            "width": 3,
-            "height": 4
-          }
+          "position": {"x": 0, "y": 2, "width": 3, "height": 4}
         },
         {
           "widget": {
             "name": "chart_usage_trend",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "customer_usage_ds",
-                  "fields": [
-                    {
-                      "name": "usage_date",
-                      "expression": "`usage_date`"
-                    },
-                    {
-                      "name": "sum(download_gb)",
-                      "expression": "SUM(`download_gb`)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "area",
-              "encodings": {
-                "x": {
-                  "fieldName": "usage_date",
-                  "scale": {
-                    "type": "temporal"
-                  },
-                  "displayName": "Date"
-                },
-                "y": {
-                  "fieldName": "sum(download_gb)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Total Download (GB)"
-                }
-              },
-              "frame": {
-                "title": "Daily Download Trend",
-                "showTitle": true
-              }
-            }
+            "queries": [{"name": "main_query", "query": {"datasetName": "customer_usage_ds", "fields": [{"name": "usage_date", "expression": "`usage_date`"}, {"name": "sum(download_gb)", "expression": "SUM(`download_gb`)"}], "disaggregated": false}}],
+            "spec": {"version": 3, "widgetType": "area", "encodings": {"x": {"fieldName": "usage_date", "scale": {"type": "temporal"}, "displayName": "Date"}, "y": {"fieldName": "sum(download_gb)", "scale": {"type": "quantitative"}, "displayName": "Total Download (GB)"}}, "frame": {"title": "Daily Download Trend", "showTitle": true}}
           },
-          "position": {
-            "x": 3,
-            "y": 2,
-            "width": 3,
-            "height": 4
-          }
+          "position": {"x": 3, "y": 2, "width": 3, "height": 4}
         },
         {
           "widget": {
-            "name": "chart_streaming_hours",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "customer_usage_ds",
-                  "fields": [
-                    {
-                      "name": "day_of_week",
-                      "expression": "`day_of_week`"
-                    },
-                    {
-                      "name": "avg(streaming_hours)",
-                      "expression": "AVG(`streaming_hours`)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "bar",
-              "encodings": {
-                "x": {
-                  "fieldName": "day_of_week",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "displayName": "Day of Week"
-                },
-                "y": {
-                  "fieldName": "avg(streaming_hours)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Avg Streaming Hours"
-                }
-              },
-              "frame": {
-                "title": "Streaming Hours by Day of Week",
-                "showTitle": true
-              }
-            }
+            "name": "chart_plan_performance",
+            "queries": [{"name": "main_query", "query": {"datasetName": "plan_performance", "fields": [{"name": "plan_tier", "expression": "`plan_tier`"}, {"name": "avg_download", "expression": "`avg_download`"}, {"name": "customer_count", "expression": "`customer_count`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "avg_download", "scale": {"type": "quantitative"}, "displayName": "Avg Daily Download (GB)"}, "y": {"fieldName": "plan_tier", "scale": {"type": "categorical", "sort": {"by": "x", "direction": "descending"}}, "displayName": "Plan Tier"}}, "frame": {"title": "Average Download by Plan Tier", "showTitle": true}}
           },
-          "position": {
-            "x": 0,
-            "y": 6,
-            "width": 3,
-            "height": 4
-          }
+          "position": {"x": 0, "y": 6, "width": 3, "height": 4}
         },
         {
           "widget": {
-            "name": "chart_gaming_hours",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "customer_usage_ds",
-                  "fields": [
-                    {
-                      "name": "day_of_week",
-                      "expression": "`day_of_week`"
-                    },
-                    {
-                      "name": "avg(gaming_hours)",
-                      "expression": "AVG(`gaming_hours`)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "bar",
-              "encodings": {
-                "x": {
-                  "fieldName": "day_of_week",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "displayName": "Day of Week"
-                },
-                "y": {
-                  "fieldName": "avg(gaming_hours)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Avg Gaming Hours"
-                }
-              },
-              "frame": {
-                "title": "Gaming Hours by Day of Week",
-                "showTitle": true
-              }
-            }
+            "name": "chart_churn_by_tech",
+            "queries": [{"name": "main_query", "query": {"datasetName": "churn_by_tech", "fields": [{"name": "technology_type", "expression": "`technology_type`"}, {"name": "avg_churn_risk", "expression": "`avg_churn_risk`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "avg_churn_risk", "scale": {"type": "quantitative"}, "displayName": "Avg Churn Risk %"}, "y": {"fieldName": "technology_type", "scale": {"type": "categorical", "sort": {"by": "x", "direction": "descending"}}, "displayName": "Technology"}}, "frame": {"title": "Churn Risk by Technology", "showTitle": true}}
           },
-          "position": {
-            "x": 3,
-            "y": 6,
-            "width": 3,
-            "height": 4
-          }
+          "position": {"x": 3, "y": 6, "width": 3, "height": 4}
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS"
