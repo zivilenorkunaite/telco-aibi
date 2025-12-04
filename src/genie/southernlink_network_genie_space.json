@@ -1,0 +1,175 @@
+{
+  "title": "SouthernLink Network Intelligence",
+  "description": "AI-powered network analytics for SouthernLink Networks. Ask questions about network health, congestion, customer experience, and capacity planning in plain English.",
+  "warehouse_id": "",
+  "tables": [
+    {
+      "table_name": "zivile.telco.network_telemetry",
+      "description": "Real-time and historical network performance metrics collected hourly from each POI (Point of Interconnect). Contains 30 days of hourly data for monitoring and trend analysis. Peak hours are typically 18:00-21:00 (6 PM - 9 PM).",
+      "columns": [
+        {"name": "poi_id", "description": "Unique identifier for the Point of Interconnect (format: STATE-XXXX)"},
+        {"name": "suburb", "description": "Suburb name where the POI is located"},
+        {"name": "state", "description": "Australian state code (NSW, VIC, QLD, WA, SA, TAS, NT, ACT)"},
+        {"name": "technology_type", "description": "Network technology: FTTP (Fiber to Premises), FTTN (Fiber to Node), HFC (Hybrid Fiber Coaxial), or Fixed Wireless"},
+        {"name": "timestamp", "description": "When the measurement was taken"},
+        {"name": "date", "description": "Date of measurement"},
+        {"name": "hour", "description": "Hour of day (0-23)"},
+        {"name": "day_of_week", "description": "Day of week (1=Sunday, 7=Saturday)"},
+        {"name": "utilization_pct", "description": "Percentage of max capacity in use (0-100). Values >70 indicate Warning, >85 indicate Critical"},
+        {"name": "current_throughput_gbps", "description": "Current data throughput in Gbps"},
+        {"name": "max_capacity_gbps", "description": "Maximum capacity of the POI in Gbps"},
+        {"name": "active_connections", "description": "Number of active customer connections"},
+        {"name": "avg_latency_ms", "description": "Average network latency in milliseconds"},
+        {"name": "packet_loss_pct", "description": "Percentage of packets lost during transmission"},
+        {"name": "congestion_status", "description": "Status indicator: 'Normal' (<70%), 'Warning' (70-85%), 'Critical' (>85%)"},
+        {"name": "avg_download_speed_pct", "description": "Average customer download speed as percentage of plan speed"}
+      ]
+    },
+    {
+      "table_name": "zivile.telco.capacity_forecasts",
+      "description": "ML model predictions for network capacity over the next 6 months. Use for capacity planning and prioritizing infrastructure investments. High-growth suburbs like Werribee, Cranbourne, Point Cook show highest risk.",
+      "columns": [
+        {"name": "poi_id", "description": "Links to poi_infrastructure table"},
+        {"name": "suburb", "description": "Suburb name"},
+        {"name": "city", "description": "City name"},
+        {"name": "state", "description": "State code"},
+        {"name": "technology_type", "description": "Network technology type"},
+        {"name": "forecast_date", "description": "The month being predicted"},
+        {"name": "months_ahead", "description": "1-6 months into the future"},
+        {"name": "current_peak_utilization_pct", "description": "Current peak hour utilization percentage"},
+        {"name": "projected_utilization_pct", "description": "Predicted utilization at forecast_date"},
+        {"name": "capacity_headroom_pct", "description": "Remaining capacity before reaching 100%"},
+        {"name": "projected_premises", "description": "Projected number of premises served"},
+        {"name": "risk_score", "description": "Risk level: 'Critical', 'High', 'Medium', or 'Low'"},
+        {"name": "upgrade_recommended", "description": "Boolean - should this POI be upgraded?"},
+        {"name": "estimated_upgrade_cost_aud", "description": "Estimated cost to upgrade in Australian dollars"},
+        {"name": "confidence_score", "description": "Model confidence (0-1)"}
+      ]
+    },
+    {
+      "table_name": "zivile.telco.incidents",
+      "description": "Network incidents, outages, and maintenance events. Contains 12 months of incident history for root cause analysis and reliability metrics.",
+      "columns": [
+        {"name": "incident_id", "description": "Unique incident identifier"},
+        {"name": "poi_id", "description": "Affected network node"},
+        {"name": "suburb", "description": "Suburb where incident occurred"},
+        {"name": "state", "description": "State code"},
+        {"name": "technology_type", "description": "Network technology at affected location"},
+        {"name": "incident_type", "description": "Type: 'Hardware Failure', 'Fiber Cut', 'Power Outage', 'Capacity Exceeded', 'Configuration Error', 'Weather Damage', 'Planned Maintenance', 'DDoS Attack', 'Software Bug'"},
+        {"name": "severity", "description": "Severity level: 'Critical', 'High', 'Medium', 'Low'"},
+        {"name": "incident_time", "description": "When the incident started"},
+        {"name": "duration_hours", "description": "How long the incident lasted in hours"},
+        {"name": "resolution_time", "description": "When the incident was resolved"},
+        {"name": "customers_affected", "description": "Number of impacted customers"},
+        {"name": "root_cause", "description": "Description of what caused the incident"},
+        {"name": "status", "description": "'Open' or 'Resolved'"}
+      ]
+    },
+    {
+      "table_name": "zivile.telco.customers",
+      "description": "Customer accounts and their broadband plans. Use for customer experience analysis and churn prediction.",
+      "columns": [
+        {"name": "customer_id", "description": "Unique customer identifier"},
+        {"name": "premise_id", "description": "Customer's physical location"},
+        {"name": "poi_id", "description": "Network node serving this customer"},
+        {"name": "technology_type", "description": "Connection technology"},
+        {"name": "premise_type", "description": "'Residential', 'Business', or 'Enterprise'"},
+        {"name": "plan_tier", "description": "Plan name: 'Basic 25', 'Standard 50', 'Standard Plus 100', 'Premium 250', 'Ultrafast 500', 'Ultrafast 1000', 'Business 100', 'Business 250', 'Enterprise 1000'"},
+        {"name": "download_speed_mbps", "description": "Plan's advertised download speed in Mbps"},
+        {"name": "upload_speed_mbps", "description": "Plan's advertised upload speed in Mbps"},
+        {"name": "monthly_price", "description": "Monthly subscription cost in AUD"},
+        {"name": "account_created_date", "description": "When the customer account was created"},
+        {"name": "contract_end_date", "description": "When the current contract ends"},
+        {"name": "is_active", "description": "Whether the account is currently active"},
+        {"name": "churn_risk_score", "description": "ML-predicted likelihood of cancellation (0-1)"}
+      ]
+    },
+    {
+      "table_name": "zivile.telco.customer_usage",
+      "description": "Daily aggregated usage data per customer. Contains 90 days of daily data for usage pattern analysis and speed performance tracking.",
+      "columns": [
+        {"name": "customer_id", "description": "Links to customers table"},
+        {"name": "poi_id", "description": "Network node serving this customer"},
+        {"name": "usage_date", "description": "Date of usage"},
+        {"name": "day_of_week", "description": "Day of week (1=Sunday, 7=Saturday)"},
+        {"name": "download_gb", "description": "Total download in gigabytes for the day"},
+        {"name": "upload_gb", "description": "Total upload in gigabytes for the day"},
+        {"name": "peak_hour_usage_pct", "description": "Percentage of usage during peak hours (6-9 PM)"},
+        {"name": "streaming_hours", "description": "Hours spent streaming video"},
+        {"name": "gaming_hours", "description": "Hours spent gaming"},
+        {"name": "work_from_home_hours", "description": "Hours of video conferencing/WFH activity"},
+        {"name": "avg_achieved_download_mbps", "description": "Actual download speed achieved"},
+        {"name": "download_speed_mbps", "description": "Plan's advertised download speed"},
+        {"name": "speed_achievement_pct", "description": "Actual speed as percentage of plan speed"}
+      ]
+    },
+    {
+      "table_name": "zivile.telco.poi_infrastructure",
+      "description": "Network Points of Interconnect (POIs) - the physical network nodes that aggregate customer connections. Use to understand network infrastructure and coverage.",
+      "columns": [
+        {"name": "poi_id", "description": "Unique identifier (format: STATE-XXXX)"},
+        {"name": "state", "description": "Australian state code"},
+        {"name": "city", "description": "City name"},
+        {"name": "suburb", "description": "Suburb name"},
+        {"name": "latitude", "description": "Geographic latitude"},
+        {"name": "longitude", "description": "Geographic longitude"},
+        {"name": "technology_type", "description": "FTTP, FTTN, HFC, or Fixed Wireless"},
+        {"name": "premises_served", "description": "Number of customer locations connected to this POI"},
+        {"name": "max_capacity_gbps", "description": "Maximum throughput capacity in Gbps"},
+        {"name": "install_date", "description": "When the POI was installed"},
+        {"name": "last_upgrade_date", "description": "When the POI was last upgraded"}
+      ]
+    },
+    {
+      "table_name": "zivile.telco.premises",
+      "description": "Physical customer locations that can be connected to the network. Use to understand coverage and connection rates.",
+      "columns": [
+        {"name": "premise_id", "description": "Unique location identifier"},
+        {"name": "poi_id", "description": "Network node that serves this location"},
+        {"name": "address", "description": "Full street address"},
+        {"name": "suburb", "description": "Suburb name"},
+        {"name": "state", "description": "State code"},
+        {"name": "latitude", "description": "Geographic latitude"},
+        {"name": "longitude", "description": "Geographic longitude"},
+        {"name": "technology_type", "description": "Available connection technology"},
+        {"name": "premise_type", "description": "'Residential', 'Business', or 'Enterprise'"},
+        {"name": "is_connected", "description": "Whether currently connected to the network"},
+        {"name": "connection_date", "description": "When the premise was connected"}
+      ]
+    }
+  ],
+  "instructions": "You are an AI assistant for SouthernLink Networks, one of Australia's largest broadband providers.\n\nDOMAIN KNOWLEDGE:\n- SouthernLink operates a multi-technology network including FTTP (Fiber to the Premises), FTTN (Fiber to the Node), HFC (Hybrid Fiber Coaxial), and Fixed Wireless\n- A POI (Point of Interconnect) is a network aggregation point that serves multiple customer premises\n- Peak hours are typically 6 PM to 9 PM (hours 18-21) when residential usage is highest\n- Congestion occurs when utilization exceeds 70% (Warning) or 85% (Critical)\n- FTTN technology typically has lower speeds and higher congestion than FTTP\n\nTERMINOLOGY:\n- 'Utilization' = percentage of maximum capacity being used\n- 'Speed achievement' = actual speed as percentage of plan speed\n- 'Premises' = customer locations (homes or businesses)\n- 'Churn risk' = likelihood of customer cancellation (0-1 score)\n\nBUSINESS CONTEXT:\n- Focus on customer experience and network reliability\n- Proactive identification of congestion helps prevent complaints\n- Capacity planning decisions require 6+ month forecasts\n- FTTN to FTTP upgrades are a strategic priority\n\nRESPONSE GUIDELINES:\n- Always include relevant metrics (counts, percentages, averages)\n- When showing POIs or suburbs, include the state for context\n- For forecasts, always mention the confidence score\n- Round percentages to 1 decimal place\n- Format currency in AUD with $ symbol\n- When asked about 'high risk' suburbs, filter for risk_score IN ('Critical', 'High')\n- Peak hours analysis should focus on hours 18-21",
+  "curated_questions": [
+    {
+      "question": "Which POIs are currently in Critical congestion status?"
+    },
+    {
+      "question": "What is the average latency by technology type?"
+    },
+    {
+      "question": "Which suburbs in Melbourne have the highest risk of congestion over the next 6 months?"
+    },
+    {
+      "question": "How many customers were affected by Critical incidents last month?"
+    },
+    {
+      "question": "What percentage of customers are achieving their plan speeds during peak hours?"
+    },
+    {
+      "question": "Which technology type has the worst performance during evening peak?"
+    },
+    {
+      "question": "How many customers would be affected if we had an outage at the Werribee POI?"
+    },
+    {
+      "question": "What's the total estimated cost to upgrade all high-risk POIs?"
+    },
+    {
+      "question": "Give me a summary of network health by state"
+    },
+    {
+      "question": "What's the correlation between congestion events and customer churn risk?"
+    }
+  ]
+}
+
