@@ -11,44 +11,28 @@
       "name": "network_kpis",
       "displayName": "Network KPIs",
       "queryLines": [
-        "SELECT",
-        "  COUNT(DISTINCT poi_id) as total_pois,",
-        "  ROUND(AVG(utilization_pct), 1) as avg_utilization,",
-        "  SUM(CASE WHEN congestion_status = 'Critical' THEN 1 ELSE 0 END) as critical_count,",
-        "  SUM(CASE WHEN congestion_status = 'Warning' THEN 1 ELSE 0 END) as warning_count,",
-        "  ROUND(AVG(avg_latency_ms), 1) as avg_latency,",
-        "  SUM(active_connections) as total_connections",
-        "FROM zivile.telco.network_telemetry"
+        "SELECT COUNT(DISTINCT poi_id) as total_pois, ROUND(AVG(utilization_pct), 1) as avg_utilization, SUM(CASE WHEN congestion_status = 'Critical' THEN 1 ELSE 0 END) as critical_count, SUM(CASE WHEN congestion_status = 'Warning' THEN 1 ELSE 0 END) as warning_count, ROUND(AVG(avg_latency_ms), 1) as avg_latency, SUM(active_connections) as total_connections FROM zivile.telco.network_telemetry"
       ]
     },
     {
       "name": "utilization_by_state",
       "displayName": "Utilization by State",
       "queryLines": [
-        "SELECT state, ROUND(AVG(utilization_pct), 1) as avg_utilization",
-        "FROM zivile.telco.network_telemetry",
-        "GROUP BY state",
-        "ORDER BY avg_utilization DESC"
+        "SELECT state, ROUND(AVG(utilization_pct), 1) as avg_utilization FROM zivile.telco.network_telemetry GROUP BY state ORDER BY avg_utilization DESC"
       ]
     },
     {
       "name": "utilization_by_tech",
       "displayName": "Utilization by Technology",
       "queryLines": [
-        "SELECT technology_type, ROUND(AVG(utilization_pct), 1) as avg_utilization",
-        "FROM zivile.telco.network_telemetry",
-        "GROUP BY technology_type",
-        "ORDER BY avg_utilization DESC"
+        "SELECT technology_type, ROUND(AVG(utilization_pct), 1) as avg_utilization FROM zivile.telco.network_telemetry GROUP BY technology_type ORDER BY avg_utilization DESC"
       ]
     },
     {
       "name": "hourly_trend",
       "displayName": "Hourly Trend",
       "queryLines": [
-        "SELECT hour, ROUND(AVG(utilization_pct), 1) as avg_utilization",
-        "FROM zivile.telco.network_telemetry",
-        "GROUP BY hour",
-        "ORDER BY hour"
+        "SELECT hour, ROUND(AVG(utilization_pct), 1) as avg_utilization FROM zivile.telco.network_telemetry GROUP BY hour ORDER BY hour"
       ]
     },
     {
@@ -62,12 +46,7 @@
       "name": "capacity_kpis",
       "displayName": "Capacity KPIs",
       "queryLines": [
-        "SELECT",
-        "  SUM(CASE WHEN risk_score IN ('Critical', 'High') THEN 1 ELSE 0 END) as high_risk_count,",
-        "  SUM(estimated_upgrade_cost_aud) as total_upgrade_cost,",
-        "  ROUND(AVG(projected_utilization_pct), 1) as avg_projected_util",
-        "FROM zivile.telco.capacity_forecasts",
-        "WHERE months_ahead = 6"
+        "SELECT SUM(CASE WHEN risk_score IN ('Critical', 'High') THEN 1 ELSE 0 END) as high_risk_count, SUM(estimated_upgrade_cost_aud) as total_upgrade_cost, ROUND(AVG(projected_utilization_pct), 1) as avg_projected_util FROM zivile.telco.capacity_forecasts WHERE months_ahead = 6"
       ]
     },
     {
@@ -81,11 +60,7 @@
       "name": "incidents_kpis",
       "displayName": "Incidents KPIs",
       "queryLines": [
-        "SELECT",
-        "  COUNT(incident_id) as total_incidents,",
-        "  SUM(customers_affected) as total_affected,",
-        "  ROUND(AVG(duration_hours), 1) as avg_duration",
-        "FROM zivile.telco.incidents"
+        "SELECT COUNT(incident_id) as total_incidents, SUM(customers_affected) as total_affected, ROUND(AVG(duration_hours), 1) as avg_duration FROM zivile.telco.incidents"
       ]
     },
     {
@@ -99,13 +74,7 @@
       "name": "customer_kpis",
       "displayName": "Customer KPIs",
       "queryLines": [
-        "SELECT",
-        "  COUNT(*) as total_records,",
-        "  ROUND(AVG(speed_achievement_pct), 1) as avg_speed_pct,",
-        "  ROUND(AVG(download_gb), 1) as avg_download,",
-        "  ROUND(AVG(streaming_hours), 1) as avg_streaming,",
-        "  ROUND(AVG(gaming_hours), 1) as avg_gaming",
-        "FROM zivile.telco.customer_usage"
+        "SELECT COUNT(*) as total_records, ROUND(AVG(speed_achievement_pct), 1) as avg_speed_pct, ROUND(AVG(download_gb), 1) as avg_download, ROUND(AVG(streaming_hours), 1) as avg_streaming, ROUND(AVG(gaming_hours), 1) as avg_gaming FROM zivile.telco.customer_usage"
       ]
     }
   ],
