@@ -704,6 +704,170 @@ display(forecast_df.filter(col("risk_score").isin("Critical", "High")).orderBy("
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## 8️⃣ Add Table and Column Comments
+# MAGIC
+# MAGIC Adding descriptive comments to all tables and columns for better documentation and AI/BI Genie understanding.
+
+# COMMAND ----------
+
+# Define all table and column comments
+table_comments = {
+    "poi_infrastructure": {
+        "table": "Network Points of Interconnect (POIs) - physical network nodes that aggregate customer connections. Each POI serves a geographic area with a specific technology type.",
+        "columns": {
+            "poi_id": "Unique identifier for the POI (format: STATE-XXXX)",
+            "state": "Australian state code (NSW, VIC, QLD, WA, SA, TAS, NT, ACT)",
+            "city": "City name where the POI is located",
+            "suburb": "Suburb name where the POI is located",
+            "latitude": "Geographic latitude coordinate",
+            "longitude": "Geographic longitude coordinate",
+            "technology_type": "Network technology: FTTP (Fiber to Premises), FTTN (Fiber to Node), HFC (Hybrid Fiber Coaxial), or Fixed Wireless",
+            "premises_served": "Number of customer premises connected to this POI",
+            "max_capacity_gbps": "Maximum throughput capacity in Gbps",
+            "install_date": "Date when the POI was originally installed",
+            "last_upgrade_date": "Date of the most recent infrastructure upgrade"
+        }
+    },
+    "premises": {
+        "table": "Physical customer locations (homes and businesses) that can be connected to the network. Each premise is served by a single POI.",
+        "columns": {
+            "premise_id": "Unique identifier for the premise location",
+            "poi_id": "POI that serves this premise (foreign key to poi_infrastructure)",
+            "address": "Full street address of the premise",
+            "suburb": "Suburb name",
+            "state": "Australian state code",
+            "latitude": "Geographic latitude coordinate",
+            "longitude": "Geographic longitude coordinate",
+            "technology_type": "Available network technology at this location",
+            "premise_type": "Type of premise: Residential, Business, or Enterprise",
+            "is_connected": "Whether the premise currently has an active connection",
+            "connection_date": "Date when the premise was first connected to the network"
+        }
+    },
+    "customers": {
+        "table": "Customer accounts and their broadband plans. Each customer is associated with a premise and served by a POI.",
+        "columns": {
+            "customer_id": "Unique customer identifier (format: CUST-XXXXXXXXXX)",
+            "premise_id": "Physical location of the customer (foreign key to premises)",
+            "poi_id": "Network node serving this customer (foreign key to poi_infrastructure)",
+            "technology_type": "Network technology for this connection",
+            "premise_type": "Type of premise: Residential, Business, or Enterprise",
+            "plan_tier": "Subscribed plan name (e.g., Basic 25, Standard 50, Premium 250, Ultrafast 1000)",
+            "download_speed_mbps": "Advertised download speed in Mbps for the plan",
+            "upload_speed_mbps": "Advertised upload speed in Mbps for the plan",
+            "monthly_price": "Monthly subscription cost in AUD",
+            "account_created_date": "Date when the customer account was created",
+            "contract_end_date": "Date when the current contract expires",
+            "is_active": "Whether the customer account is currently active",
+            "churn_risk_score": "ML-predicted probability of customer cancellation (0-1, higher = more likely to churn)"
+        }
+    },
+    "network_telemetry": {
+        "table": "Real-time network performance metrics collected hourly from each POI. Contains 30 days of historical data for monitoring and trend analysis.",
+        "columns": {
+            "poi_id": "POI identifier (foreign key to poi_infrastructure)",
+            "suburb": "Suburb where the POI is located",
+            "state": "Australian state code",
+            "technology_type": "Network technology type",
+            "timestamp": "Exact timestamp of the measurement",
+            "date": "Date of the measurement",
+            "hour": "Hour of day (0-23). Peak hours are 18-21 (6 PM - 9 PM)",
+            "day_of_week": "Day of week (1=Sunday, 7=Saturday)",
+            "utilization_pct": "Percentage of max capacity in use (0-100). >70 = Warning, >85 = Critical",
+            "current_throughput_gbps": "Current data throughput in Gbps",
+            "max_capacity_gbps": "Maximum capacity of the POI in Gbps",
+            "active_connections": "Number of active customer connections at this time",
+            "avg_latency_ms": "Average network latency in milliseconds",
+            "packet_loss_pct": "Percentage of packets lost during transmission",
+            "congestion_status": "Status indicator: Normal (<70%), Warning (70-85%), Critical (>85%)",
+            "avg_download_speed_pct": "Average customer download speed as percentage of plan speed"
+        }
+    },
+    "incidents": {
+        "table": "Network incidents, outages, and maintenance events. Contains 12 months of incident history for root cause analysis and reliability tracking.",
+        "columns": {
+            "incident_id": "Unique incident identifier (format: INC-XXXXXXXX)",
+            "poi_id": "Affected POI (foreign key to poi_infrastructure)",
+            "suburb": "Suburb where incident occurred",
+            "state": "Australian state code",
+            "technology_type": "Network technology at affected location",
+            "incident_type": "Type of incident: Hardware Failure, Fiber Cut, Power Outage, Capacity Exceeded, Configuration Error, Weather Damage, Planned Maintenance, DDoS Attack, Software Bug",
+            "severity": "Severity level: Critical, High, Medium, Low",
+            "incident_time": "Timestamp when the incident started",
+            "duration_hours": "Duration of the incident in hours",
+            "resolution_time": "Timestamp when the incident was resolved",
+            "customers_affected": "Number of customers impacted by this incident",
+            "root_cause": "Description of what caused the incident",
+            "status": "Current status: Open or Resolved"
+        }
+    },
+    "customer_usage": {
+        "table": "Daily aggregated usage data per customer. Contains 90 days of daily usage patterns for bandwidth and application analysis.",
+        "columns": {
+            "customer_id": "Customer identifier (foreign key to customers)",
+            "poi_id": "Network node serving this customer",
+            "usage_date": "Date of the usage record",
+            "day_of_week": "Day of week (1=Sunday, 7=Saturday)",
+            "download_gb": "Total download volume in gigabytes for the day",
+            "upload_gb": "Total upload volume in gigabytes for the day",
+            "peak_hour_usage_pct": "Percentage of daily usage during peak hours (6-9 PM)",
+            "streaming_hours": "Hours spent on video streaming services",
+            "gaming_hours": "Hours spent on online gaming",
+            "work_from_home_hours": "Hours of video conferencing and work-related activity",
+            "avg_achieved_download_mbps": "Average actual download speed achieved in Mbps",
+            "download_speed_mbps": "Advertised plan download speed in Mbps",
+            "speed_achievement_pct": "Actual speed as percentage of plan speed (higher is better)"
+        }
+    },
+    "capacity_forecasts": {
+        "table": "ML model predictions for network capacity over the next 6 months. Use for capacity planning and prioritizing infrastructure investments.",
+        "columns": {
+            "poi_id": "POI identifier (foreign key to poi_infrastructure)",
+            "suburb": "Suburb name",
+            "city": "City name",
+            "state": "Australian state code",
+            "technology_type": "Network technology type",
+            "forecast_date": "The future month being predicted",
+            "months_ahead": "Number of months into the future (1-6)",
+            "current_peak_utilization_pct": "Current peak hour utilization percentage",
+            "projected_utilization_pct": "Predicted utilization at the forecast date",
+            "capacity_headroom_pct": "Remaining capacity before reaching 100% (higher is better)",
+            "projected_premises": "Projected number of premises served at forecast date",
+            "risk_score": "Risk level: Critical (>90%), High (80-90%), Medium (70-80%), Low (<70%)",
+            "upgrade_recommended": "Boolean flag indicating if infrastructure upgrade is recommended",
+            "estimated_upgrade_cost_aud": "Estimated cost to upgrade infrastructure in Australian dollars",
+            "confidence_score": "ML model confidence score (0-1, higher is more confident)",
+            "model_version": "Version of the ML model used for prediction"
+        }
+    }
+}
+
+# Apply table comments
+print("📝 Adding table and column comments...")
+print("=" * 70)
+
+for table_name, comments in table_comments.items():
+    # Add table comment
+    table_comment = comments["table"].replace("'", "\\'")
+    spark.sql(f"ALTER TABLE {table_name} SET TBLPROPERTIES ('comment' = '{table_comment}')")
+    print(f"✅ {table_name}: table comment added")
+    
+    # Add column comments
+    for col_name, col_comment in comments["columns"].items():
+        col_comment_escaped = col_comment.replace("'", "\\'")
+        try:
+            spark.sql(f"ALTER TABLE {table_name} ALTER COLUMN {col_name} COMMENT '{col_comment_escaped}'")
+        except Exception as e:
+            print(f"   ⚠️ Could not add comment to {table_name}.{col_name}: {str(e)[:50]}")
+    
+    print(f"   → {len(comments['columns'])} column comments added")
+
+print("=" * 70)
+print("✅ All table and column comments have been added!")
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## ✅ Data Generation Complete!
 # MAGIC
 # MAGIC ### Summary of Tables Created:
