@@ -35,7 +35,7 @@ targets:
     mode: development
     default: true
     workspace:
-      host: ${DATABRICKS_HOST}
+      host: https://fe-vm-vdm-classic-dz1ef4.cloud.databricks.com/
 
   # Production target
   prod:
