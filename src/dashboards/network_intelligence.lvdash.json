@@ -8,10 +8,66 @@
       ]
     },
     {
+      "name": "network_kpis",
+      "displayName": "Network KPIs",
+      "queryLines": [
+        "SELECT",
+        "  COUNT(DISTINCT poi_id) as total_pois,",
+        "  ROUND(AVG(utilization_pct), 1) as avg_utilization,",
+        "  SUM(CASE WHEN congestion_status = 'Critical' THEN 1 ELSE 0 END) as critical_count,",
+        "  SUM(CASE WHEN congestion_status = 'Warning' THEN 1 ELSE 0 END) as warning_count,",
+        "  ROUND(AVG(avg_latency_ms), 1) as avg_latency,",
+        "  SUM(active_connections) as total_connections",
+        "FROM zivile.telco.network_telemetry"
+      ]
+    },
+    {
+      "name": "utilization_by_state",
+      "displayName": "Utilization by State",
+      "queryLines": [
+        "SELECT state, ROUND(AVG(utilization_pct), 1) as avg_utilization",
+        "FROM zivile.telco.network_telemetry",
+        "GROUP BY state",
+        "ORDER BY avg_utilization DESC"
+      ]
+    },
+    {
+      "name": "utilization_by_tech",
+      "displayName": "Utilization by Technology",
+      "queryLines": [
+        "SELECT technology_type, ROUND(AVG(utilization_pct), 1) as avg_utilization",
+        "FROM zivile.telco.network_telemetry",
+        "GROUP BY technology_type",
+        "ORDER BY avg_utilization DESC"
+      ]
+    },
+    {
+      "name": "hourly_trend",
+      "displayName": "Hourly Trend",
+      "queryLines": [
+        "SELECT hour, ROUND(AVG(utilization_pct), 1) as avg_utilization",
+        "FROM zivile.telco.network_telemetry",
+        "GROUP BY hour",
+        "ORDER BY hour"
+      ]
+    },
+    {
       "name": "capacity_forecasts_ds",
       "displayName": "Capacity Forecasts",
       "queryLines": [
         "SELECT * FROM zivile.telco.capacity_forecasts WHERE months_ahead = 6"
+      ]
+    },
+    {
+      "name": "capacity_kpis",
+      "displayName": "Capacity KPIs",
+      "queryLines": [
+        "SELECT",
+        "  SUM(CASE WHEN risk_score IN ('Critical', 'High') THEN 1 ELSE 0 END) as high_risk_count,",
+        "  SUM(estimated_upgrade_cost_aud) as total_upgrade_cost,",
+        "  ROUND(AVG(projected_utilization_pct), 1) as avg_projected_util",
+        "FROM zivile.telco.capacity_forecasts",
+        "WHERE months_ahead = 6"
       ]
     },
     {
@@ -22,10 +78,34 @@
       ]
     },
     {
+      "name": "incidents_kpis",
+      "displayName": "Incidents KPIs",
+      "queryLines": [
+        "SELECT",
+        "  COUNT(incident_id) as total_incidents,",
+        "  SUM(customers_affected) as total_affected,",
+        "  ROUND(AVG(duration_hours), 1) as avg_duration",
+        "FROM zivile.telco.incidents"
+      ]
+    },
+    {
       "name": "customer_usage_ds",
       "displayName": "Customer Usage",
       "queryLines": [
         "SELECT * FROM zivile.telco.customer_usage"
+      ]
+    },
+    {
+      "name": "customer_kpis",
+      "displayName": "Customer KPIs",
+      "queryLines": [
+        "SELECT",
+        "  COUNT(*) as total_records,",
+        "  ROUND(AVG(speed_achievement_pct), 1) as avg_speed_pct,",
+        "  ROUND(AVG(download_gb), 1) as avg_download,",
+        "  ROUND(AVG(streaming_hours), 1) as avg_streaming,",
+        "  ROUND(AVG(gaming_hours), 1) as avg_gaming",
+        "FROM zivile.telco.customer_usage"
       ]
     }
   ],
@@ -41,14 +121,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "network_telemetry_ds",
+                  "datasetName": "network_kpis",
                   "fields": [
                     {
-                      "name": "countdistinct(poi_id)",
-                      "expression": "COUNT(DISTINCT `poi_id`)"
+                      "name": "total_pois",
+                      "expression": "`total_pois`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -57,7 +137,7 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "countdistinct(poi_id)",
+                  "fieldName": "total_pois",
                   "displayName": "Total POIs"
                 }
               },
@@ -81,14 +161,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "network_telemetry_ds",
+                  "datasetName": "network_kpis",
                   "fields": [
                     {
-                      "name": "avg(utilization_pct)",
-                      "expression": "AVG(`utilization_pct`)"
+                      "name": "avg_utilization",
+                      "expression": "`avg_utilization`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -97,7 +177,7 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "avg(utilization_pct)",
+                  "fieldName": "avg_utilization",
                   "displayName": "Avg Utilization %"
                 }
               },
@@ -121,14 +201,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "network_telemetry_ds",
+                  "datasetName": "network_kpis",
                   "fields": [
                     {
-                      "name": "count_critical",
-                      "expression": "SUM(CASE WHEN `congestion_status` = 'Critical' THEN 1 ELSE 0 END)"
+                      "name": "critical_count",
+                      "expression": "`critical_count`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -137,8 +217,8 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "count_critical",
-                  "displayName": "Critical POIs"
+                  "fieldName": "critical_count",
+                  "displayName": "Critical"
                 }
               },
               "frame": {
@@ -161,14 +241,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "network_telemetry_ds",
+                  "datasetName": "network_kpis",
                   "fields": [
                     {
-                      "name": "count_warning",
-                      "expression": "SUM(CASE WHEN `congestion_status` = 'Warning' THEN 1 ELSE 0 END)"
+                      "name": "warning_count",
+                      "expression": "`warning_count`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -177,8 +257,8 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "count_warning",
-                  "displayName": "Warning POIs"
+                  "fieldName": "warning_count",
+                  "displayName": "Warning"
                 }
               },
               "frame": {
@@ -201,14 +281,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "network_telemetry_ds",
+                  "datasetName": "network_kpis",
                   "fields": [
                     {
-                      "name": "avg(avg_latency_ms)",
-                      "expression": "AVG(`avg_latency_ms`)"
+                      "name": "avg_latency",
+                      "expression": "`avg_latency`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -217,7 +297,7 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "avg(avg_latency_ms)",
+                  "fieldName": "avg_latency",
                   "displayName": "Avg Latency (ms)"
                 }
               },
@@ -241,14 +321,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "network_telemetry_ds",
+                  "datasetName": "network_kpis",
                   "fields": [
                     {
-                      "name": "sum(active_connections)",
-                      "expression": "SUM(`active_connections`)"
+                      "name": "total_connections",
+                      "expression": "`total_connections`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -257,8 +337,8 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "sum(active_connections)",
-                  "displayName": "Active Connections"
+                  "fieldName": "total_connections",
+                  "displayName": "Connections"
                 }
               },
               "frame": {
@@ -281,18 +361,18 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "network_telemetry_ds",
+                  "datasetName": "utilization_by_state",
                   "fields": [
                     {
                       "name": "state",
                       "expression": "`state`"
                     },
                     {
-                      "name": "avg(utilization_pct)",
-                      "expression": "AVG(`utilization_pct`)"
+                      "name": "avg_utilization",
+                      "expression": "`avg_utilization`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -301,21 +381,22 @@
               "widgetType": "bar",
               "encodings": {
                 "x": {
-                  "fieldName": "state",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "y-reversed"
-                    }
-                  },
-                  "displayName": "State"
-                },
-                "y": {
-                  "fieldName": "avg(utilization_pct)",
+                  "fieldName": "avg_utilization",
                   "scale": {
                     "type": "quantitative"
                   },
                   "displayName": "Avg Utilization %"
+                },
+                "y": {
+                  "fieldName": "state",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x",
+                      "direction": "descending"
+                    }
+                  },
+                  "displayName": "State"
                 }
               },
               "frame": {
@@ -338,18 +419,18 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "network_telemetry_ds",
+                  "datasetName": "utilization_by_tech",
                   "fields": [
                     {
                       "name": "technology_type",
                       "expression": "`technology_type`"
                     },
                     {
-                      "name": "avg(utilization_pct)",
-                      "expression": "AVG(`utilization_pct`)"
+                      "name": "avg_utilization",
+                      "expression": "`avg_utilization`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -358,21 +439,22 @@
               "widgetType": "bar",
               "encodings": {
                 "x": {
-                  "fieldName": "technology_type",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "y-reversed"
-                    }
-                  },
-                  "displayName": "Technology"
-                },
-                "y": {
-                  "fieldName": "avg(utilization_pct)",
+                  "fieldName": "avg_utilization",
                   "scale": {
                     "type": "quantitative"
                   },
                   "displayName": "Avg Utilization %"
+                },
+                "y": {
+                  "fieldName": "technology_type",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x",
+                      "direction": "descending"
+                    }
+                  },
+                  "displayName": "Technology"
                 }
               },
               "frame": {
@@ -395,24 +477,24 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "network_telemetry_ds",
+                  "datasetName": "hourly_trend",
                   "fields": [
                     {
                       "name": "hour",
                       "expression": "`hour`"
                     },
                     {
-                      "name": "avg(utilization_pct)",
-                      "expression": "AVG(`utilization_pct`)"
+                      "name": "avg_utilization",
+                      "expression": "`avg_utilization`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
             "spec": {
               "version": 3,
-              "widgetType": "line",
+              "widgetType": "area",
               "encodings": {
                 "x": {
                   "fieldName": "hour",
@@ -422,7 +504,7 @@
                   "displayName": "Hour of Day"
                 },
                 "y": {
-                  "fieldName": "avg(utilization_pct)",
+                  "fieldName": "avg_utilization",
                   "scale": {
                     "type": "quantitative"
                   },
@@ -460,8 +542,8 @@
                       "expression": "`congestion_status`"
                     },
                     {
-                      "name": "count(poi_id)",
-                      "expression": "COUNT(`poi_id`)"
+                      "name": "count(*)",
+                      "expression": "COUNT(*)"
                     }
                   ],
                   "disaggregated": false
@@ -483,7 +565,7 @@
                   "displayName": "Suburb"
                 },
                 "y": {
-                  "fieldName": "count(poi_id)",
+                  "fieldName": "count(*)",
                   "scale": {
                     "type": "quantitative"
                   },
@@ -524,14 +606,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "capacity_forecasts_ds",
+                  "datasetName": "capacity_kpis",
                   "fields": [
                     {
-                      "name": "count_high_risk",
-                      "expression": "SUM(CASE WHEN `risk_score` IN ('Critical', 'High') THEN 1 ELSE 0 END)"
+                      "name": "high_risk_count",
+                      "expression": "`high_risk_count`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -540,12 +622,12 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "count_high_risk",
+                  "fieldName": "high_risk_count",
                   "displayName": "High Risk POIs"
                 }
               },
               "frame": {
-                "title": "High Risk POIs (6-Month)",
+                "title": "🔴 High Risk POIs",
                 "showTitle": true
               }
             }
@@ -564,14 +646,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "capacity_forecasts_ds",
+                  "datasetName": "capacity_kpis",
                   "fields": [
                     {
-                      "name": "sum(estimated_upgrade_cost_aud)",
-                      "expression": "SUM(`estimated_upgrade_cost_aud`)"
+                      "name": "total_upgrade_cost",
+                      "expression": "`total_upgrade_cost`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -580,12 +662,12 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "sum(estimated_upgrade_cost_aud)",
-                  "displayName": "Total Upgrade Cost (AUD)"
+                  "fieldName": "total_upgrade_cost",
+                  "displayName": "Upgrade Cost (AUD)"
                 }
               },
               "frame": {
-                "title": "Total Upgrade Cost (AUD)",
+                "title": "💰 Total Upgrade Cost",
                 "showTitle": true
               }
             }
@@ -604,14 +686,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "capacity_forecasts_ds",
+                  "datasetName": "capacity_kpis",
                   "fields": [
                     {
-                      "name": "avg(projected_utilization_pct)",
-                      "expression": "AVG(`projected_utilization_pct`)"
+                      "name": "avg_projected_util",
+                      "expression": "`avg_projected_util`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -620,12 +702,12 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "avg(projected_utilization_pct)",
-                  "displayName": "Avg Projected Util %"
+                  "fieldName": "avg_projected_util",
+                  "displayName": "Projected Util %"
                 }
               },
               "frame": {
-                "title": "Avg Projected Util %",
+                "title": "📈 Avg Projected Util %",
                 "showTitle": true
               }
             }
@@ -651,15 +733,15 @@
                       "expression": "`suburb`"
                     },
                     {
-                      "name": "avg(projected_utilization_pct)",
-                      "expression": "AVG(`projected_utilization_pct`)"
+                      "name": "projected_utilization_pct",
+                      "expression": "`projected_utilization_pct`"
                     },
                     {
                       "name": "risk_score",
                       "expression": "`risk_score`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -668,28 +750,29 @@
               "widgetType": "bar",
               "encodings": {
                 "x": {
-                  "fieldName": "suburb",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "y-reversed"
-                    }
-                  },
-                  "displayName": "Suburb"
-                },
-                "y": {
-                  "fieldName": "avg(projected_utilization_pct)",
+                  "fieldName": "projected_utilization_pct",
                   "scale": {
                     "type": "quantitative"
                   },
                   "displayName": "Projected Utilization %"
+                },
+                "y": {
+                  "fieldName": "suburb",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x",
+                      "direction": "descending"
+                    }
+                  },
+                  "displayName": "Suburb"
                 },
                 "color": {
                   "fieldName": "risk_score",
                   "scale": {
                     "type": "categorical"
                   },
-                  "displayName": "Risk Score"
+                  "displayName": "Risk"
                 }
               },
               "frame": {
@@ -702,7 +785,7 @@
             "x": 0,
             "y": 2,
             "width": 6,
-            "height": 5
+            "height": 6
           }
         },
         {
@@ -732,21 +815,22 @@
               "widgetType": "bar",
               "encodings": {
                 "x": {
-                  "fieldName": "technology_type",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "y-reversed"
-                    }
-                  },
-                  "displayName": "Technology"
-                },
-                "y": {
                   "fieldName": "sum(estimated_upgrade_cost_aud)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Total Upgrade Cost"
+                  "displayName": "Upgrade Cost (AUD)"
+                },
+                "y": {
+                  "fieldName": "technology_type",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x",
+                      "direction": "descending"
+                    }
+                  },
+                  "displayName": "Technology"
                 }
               },
               "frame": {
@@ -757,7 +841,7 @@
           },
           "position": {
             "x": 0,
-            "y": 7,
+            "y": 8,
             "width": 3,
             "height": 4
           }
@@ -776,8 +860,8 @@
                       "expression": "`risk_score`"
                     },
                     {
-                      "name": "count(poi_id)",
-                      "expression": "COUNT(`poi_id`)"
+                      "name": "count(*)",
+                      "expression": "COUNT(*)"
                     }
                   ],
                   "disaggregated": false
@@ -796,7 +880,7 @@
                   "displayName": "Risk Score"
                 },
                 "y": {
-                  "fieldName": "count(poi_id)",
+                  "fieldName": "count(*)",
                   "scale": {
                     "type": "quantitative"
                   },
@@ -811,7 +895,7 @@
           },
           "position": {
             "x": 3,
-            "y": 7,
+            "y": 8,
             "width": 3,
             "height": 4
           }
@@ -830,14 +914,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "incidents_ds",
+                  "datasetName": "incidents_kpis",
                   "fields": [
                     {
-                      "name": "count(incident_id)",
-                      "expression": "COUNT(`incident_id`)"
+                      "name": "total_incidents",
+                      "expression": "`total_incidents`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -846,7 +930,7 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "count(incident_id)",
+                  "fieldName": "total_incidents",
                   "displayName": "Total Incidents"
                 }
               },
@@ -870,14 +954,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "incidents_ds",
+                  "datasetName": "incidents_kpis",
                   "fields": [
                     {
-                      "name": "sum(customers_affected)",
-                      "expression": "SUM(`customers_affected`)"
+                      "name": "total_affected",
+                      "expression": "`total_affected`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -886,7 +970,7 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "sum(customers_affected)",
+                  "fieldName": "total_affected",
                   "displayName": "Customers Affected"
                 }
               },
@@ -910,14 +994,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "incidents_ds",
+                  "datasetName": "incidents_kpis",
                   "fields": [
                     {
-                      "name": "avg(duration_hours)",
-                      "expression": "AVG(`duration_hours`)"
+                      "name": "avg_duration",
+                      "expression": "`avg_duration`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -926,7 +1010,7 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "avg(duration_hours)",
+                  "fieldName": "avg_duration",
                   "displayName": "Avg Duration (hrs)"
                 }
               },
@@ -957,8 +1041,8 @@
                       "expression": "`incident_type`"
                     },
                     {
-                      "name": "count(incident_id)",
-                      "expression": "COUNT(`incident_id`)"
+                      "name": "count(*)",
+                      "expression": "COUNT(*)"
                     }
                   ],
                   "disaggregated": false
@@ -970,21 +1054,22 @@
               "widgetType": "bar",
               "encodings": {
                 "x": {
-                  "fieldName": "incident_type",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "y-reversed"
-                    }
-                  },
-                  "displayName": "Incident Type"
-                },
-                "y": {
-                  "fieldName": "count(incident_id)",
+                  "fieldName": "count(*)",
                   "scale": {
                     "type": "quantitative"
                   },
                   "displayName": "Count"
+                },
+                "y": {
+                  "fieldName": "incident_type",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x",
+                      "direction": "descending"
+                    }
+                  },
+                  "displayName": "Incident Type"
                 }
               },
               "frame": {
@@ -1014,8 +1099,8 @@
                       "expression": "`severity`"
                     },
                     {
-                      "name": "count(incident_id)",
-                      "expression": "COUNT(`incident_id`)"
+                      "name": "count(*)",
+                      "expression": "COUNT(*)"
                     }
                   ],
                   "disaggregated": false
@@ -1027,18 +1112,18 @@
               "widgetType": "bar",
               "encodings": {
                 "x": {
+                  "fieldName": "count(*)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Count"
+                },
+                "y": {
                   "fieldName": "severity",
                   "scale": {
                     "type": "categorical"
                   },
                   "displayName": "Severity"
-                },
-                "y": {
-                  "fieldName": "count(incident_id)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Count"
                 }
               },
               "frame": {
@@ -1072,8 +1157,8 @@
                       "expression": "DATE_TRUNC(\"MONTH\", `incident_time`)"
                     },
                     {
-                      "name": "count(incident_id)",
-                      "expression": "COUNT(`incident_id`)"
+                      "name": "count(*)",
+                      "expression": "COUNT(*)"
                     }
                   ],
                   "disaggregated": false
@@ -1092,7 +1177,7 @@
                   "displayName": "Month"
                 },
                 "y": {
-                  "fieldName": "count(incident_id)",
+                  "fieldName": "count(*)",
                   "scale": {
                     "type": "quantitative"
                   },
@@ -1133,14 +1218,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "customer_usage_ds",
+                  "datasetName": "customer_kpis",
                   "fields": [
                     {
-                      "name": "count(*)",
-                      "expression": "COUNT(*)"
+                      "name": "total_records",
+                      "expression": "`total_records`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -1149,7 +1234,7 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "count(*)",
+                  "fieldName": "total_records",
                   "displayName": "Usage Records"
                 }
               },
@@ -1173,14 +1258,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "customer_usage_ds",
+                  "datasetName": "customer_kpis",
                   "fields": [
                     {
-                      "name": "avg(speed_achievement_pct)",
-                      "expression": "AVG(`speed_achievement_pct`)"
+                      "name": "avg_speed_pct",
+                      "expression": "`avg_speed_pct`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -1189,8 +1274,8 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "avg(speed_achievement_pct)",
-                  "displayName": "Avg Speed Achievement %"
+                  "fieldName": "avg_speed_pct",
+                  "displayName": "Speed Achievement %"
                 }
               },
               "frame": {
@@ -1213,14 +1298,14 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "customer_usage_ds",
+                  "datasetName": "customer_kpis",
                   "fields": [
                     {
-                      "name": "avg(download_gb)",
-                      "expression": "AVG(`download_gb`)"
+                      "name": "avg_download",
+                      "expression": "`avg_download`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -1229,7 +1314,7 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "avg(download_gb)",
+                  "fieldName": "avg_download",
                   "displayName": "Avg Download (GB)"
                 }
               },
@@ -1324,7 +1409,7 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "line",
+              "widgetType": "area",
               "encodings": {
                 "x": {
                   "fieldName": "usage_date",
