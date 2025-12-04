@@ -530,9 +530,78 @@ incidents_df = incidents_df.select(
     "resolution_time", "customers_affected", "root_cause", "status"
 )
 
-incidents_df.write.mode("overwrite").saveAsTable("incidents")
-print(f"✅ Created incidents table with {incidents_df.count()} incidents")
-display(incidents_df.orderBy(col("incident_time").desc()).limit(30))
+# ============================================================================
+# 🌧️ STORM EVENT: Melbourne severe weather ~2 weeks ago
+# This creates a visible spike in the incidents timeline for demo purposes
+# ============================================================================
+
+storm_affected_suburbs = ["Werribee", "Cranbourne", "Dandenong", "Frankston", "Geelong"]
+
+# Generate storm incidents - 5-8 extra incidents per affected POI during 3-day storm
+storm_base = poi_data.select("poi_id", "suburb", "state", "technology_type") \
+    .filter(col("suburb").isin(storm_affected_suburbs)) \
+    .crossJoin(spark.range(1, 8).toDF("storm_num"))  # 7 incidents per POI
+
+storm_incidents = storm_base \
+.withColumn("incident_id", concat(
+    lit("INC-STORM-"),
+    substring(sha2(concat(col("poi_id"), col("storm_num").cast("string"), lit("storm")), 256), 1, 6)
+)) \
+.withColumn("storm_day_offset", (rand() * 3).cast("int")) \
+.withColumn("incident_date", 
+    date_sub(current_date(), 14 + col("storm_day_offset"))  # 14-16 days ago (3-day storm)
+) \
+.withColumn("incident_time",
+    to_timestamp(concat(
+        col("incident_date").cast("string"),
+        lit(" "),
+        lpad((rand() * 24).cast("int").cast("string"), 2, "0"),
+        lit(":"),
+        lpad((rand() * 60).cast("int").cast("string"), 2, "0"),
+        lit(":00")
+    ))
+) \
+.withColumn("rand_type", rand()) \
+.withColumn("incident_type",
+    when(col("rand_type") < 0.55, lit("Weather Damage"))
+    .when(col("rand_type") < 0.85, lit("Power Outage"))
+    .otherwise(lit("Fiber Cut"))
+) \
+.withColumn("severity",
+    when(col("rand_type") < 0.35, lit("Critical"))
+    .when(col("rand_type") < 0.85, lit("High"))
+    .otherwise(lit("Medium"))
+) \
+.withColumn("duration_hours",
+    when(col("incident_type") == "Weather Damage", 4 + rand() * 18)
+    .when(col("incident_type") == "Power Outage", 2 + rand() * 10)
+    .otherwise(6 + rand() * 30)  # Fiber cuts take longer
+) \
+.withColumn("customers_affected",
+    (rand() * 8000 + 2000).cast("int")  # Higher impact during storm
+) \
+.withColumn("resolution_time",
+    expr("incident_time + interval '1' hour * cast(duration_hours as int)")
+) \
+.withColumn("root_cause",
+    lit("Severe storm event - Melbourne region experienced damaging winds and heavy rainfall causing widespread infrastructure damage")
+) \
+.withColumn("status", lit("Resolved"))
+
+storm_incidents = storm_incidents.select(
+    "incident_id", "poi_id", "suburb", "state", "technology_type",
+    "incident_type", "severity", "incident_time", 
+    spark_round(col("duration_hours"), 1).alias("duration_hours"),
+    "resolution_time", "customers_affected", "root_cause", "status"
+)
+
+# Combine base incidents with storm incidents
+all_incidents_df = incidents_df.union(storm_incidents)
+
+all_incidents_df.write.mode("overwrite").saveAsTable("incidents")
+print(f"✅ Created incidents table with {all_incidents_df.count()} incidents")
+print(f"   └── Including {storm_incidents.count()} storm-related incidents from Melbourne severe weather event")
+display(all_incidents_df.orderBy(col("incident_time").desc()).limit(30))
 
 # COMMAND ----------
 
