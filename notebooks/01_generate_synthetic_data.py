@@ -1,12 +1,12 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC # 🔧 SouthernLink Networks - Synthetic Data Generator
-# MAGIC 
+# MAGIC
 # MAGIC This notebook generates synthetic data for the Databricks AI/BI demo showcasing network intelligence capabilities.
-# MAGIC 
+# MAGIC
 # MAGIC **Catalog:** `zivile`  
 # MAGIC **Schema:** `telco`
-# MAGIC 
+# MAGIC
 # MAGIC ### Tables Created:
 # MAGIC 1. `poi_infrastructure` - Points of Interconnect (network nodes)
 # MAGIC 2. `premises` - Customer premises/locations
@@ -50,7 +50,7 @@ print(f"✅ Using catalog: {CATALOG}, schema: {SCHEMA}")
 
 # MAGIC %md
 # MAGIC ## 1️⃣ POI Infrastructure (Points of Interconnect)
-# MAGIC 
+# MAGIC
 # MAGIC Network nodes that serve as aggregation points for customer connections.
 
 # COMMAND ----------
@@ -160,7 +160,7 @@ display(poi_df)
 
 # MAGIC %md
 # MAGIC ## 2️⃣ Premises (Customer Locations)
-# MAGIC 
+# MAGIC
 # MAGIC Physical addresses that can be connected to the network.
 
 # COMMAND ----------
@@ -179,7 +179,7 @@ premises_df = poi_data.select(
     col("longitude").alias("poi_lon")
 ) \
 .withColumn("premise_count", col("premises_served")) \
-.withColumn("premise_idx", explode(sequence(lit(1), col("premise_count") / 100))) \
+.withColumn("premise_idx", explode(sequence(lit(1), (col("premise_count") / 100).cast("int")))) \
 .withColumn("premise_id", concat(
     col("poi_id"),
     lit("-P"),
@@ -229,7 +229,7 @@ display(premises_df.limit(20))
 
 # MAGIC %md
 # MAGIC ## 3️⃣ Customers (Account & Plan Information)
-# MAGIC 
+# MAGIC
 # MAGIC Customer accounts with their selected plans and service details.
 
 # COMMAND ----------
@@ -330,7 +330,7 @@ display(customers_df.limit(20))
 
 # MAGIC %md
 # MAGIC ## 4️⃣ Network Telemetry (Real-time Performance Data)
-# MAGIC 
+# MAGIC
 # MAGIC Network performance metrics collected from POIs - last 30 days of hourly data.
 
 # COMMAND ----------
@@ -346,7 +346,7 @@ telemetry_base = poi_data.select(
     spark.range(0, 30 * 24).toDF("hour_offset")
 ) \
 .withColumn("timestamp", 
-    expr("timestamp_sub(current_timestamp(), make_interval(0, 0, 0, 0, hour_offset, 0, 0))")
+    expr("current_timestamp() - interval '1' hour * hour_offset")
 ) \
 .withColumn("date", to_date(col("timestamp"))) \
 .withColumn("hour", hour(col("timestamp"))) \
@@ -428,7 +428,7 @@ display(telemetry_df.orderBy(col("timestamp").desc()).limit(50))
 
 # MAGIC %md
 # MAGIC ## 5️⃣ Incidents (Network Issues & Outages)
-# MAGIC 
+# MAGIC
 # MAGIC Historical record of network incidents, outages, and maintenance events.
 
 # COMMAND ----------
@@ -504,7 +504,7 @@ incidents_df = incidents_base \
     (rand() * 5000 + 500).cast("int")
 ) \
 .withColumn("resolution_time",
-    expr("timestamp_add(incident_time, make_interval(0, 0, 0, 0, cast(duration_hours as int), cast((duration_hours % 1) * 60 as int), 0))")
+    expr("incident_time + interval '1' minute * cast(duration_hours as int)")
 ) \
 .withColumn("root_cause",
     when(col("incident_type") == "Hardware Failure", lit("Faulty network equipment requiring replacement"))
@@ -538,7 +538,7 @@ display(incidents_df.orderBy(col("incident_time").desc()).limit(30))
 
 # MAGIC %md
 # MAGIC ## 6️⃣ Customer Usage (Daily Usage Patterns)
-# MAGIC 
+# MAGIC
 # MAGIC Daily aggregated usage data per customer for the last 90 days.
 
 # COMMAND ----------
@@ -616,7 +616,7 @@ display(usage_df.limit(30))
 
 # MAGIC %md
 # MAGIC ## 7️⃣ Capacity Forecasts (ML Predictions)
-# MAGIC 
+# MAGIC
 # MAGIC Simulated ML model predictions for capacity planning over the next 6 months.
 
 # COMMAND ----------
@@ -705,7 +705,7 @@ display(forecast_df.filter(col("risk_score").isin("Critical", "High")).orderBy("
 
 # MAGIC %md
 # MAGIC ## ✅ Data Generation Complete!
-# MAGIC 
+# MAGIC
 # MAGIC ### Summary of Tables Created:
 
 # COMMAND ----------
@@ -740,12 +740,12 @@ print("You can now use these tables with AI/BI Genie for the demo.")
 
 # MAGIC %md
 # MAGIC ## 🔍 Sample Queries for Genie Demo
-# MAGIC 
+# MAGIC
 # MAGIC Here are some sample questions you can ask Genie:
-# MAGIC 
+# MAGIC
 # MAGIC 1. **"Which suburbs in Melbourne have the highest risk of congestion over the next 6 months?"**
 # MAGIC 2. **"Show me the top 10 POIs with the most critical incidents in the last 3 months"**
 # MAGIC 3. **"What percentage of customers are achieving their plan speeds during peak hours?"**
 # MAGIC 4. **"Which technology type has the worst performance during evening peak?"**
 # MAGIC 5. **"How many customers would be affected if we had an outage at the Werribee POI?"**
-
+# MAGIC
