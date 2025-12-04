@@ -51,19 +51,24 @@ print(f"Workspace URL: {workspace_url}")
 # COMMAND ----------
 
 # Genie Space configuration
+import uuid
+
+def generate_id():
+    """Generate a 32-char hex ID like Databricks uses"""
+    return uuid.uuid4().hex
 
 # The serialized_space contains the internal configuration as a JSON string
 serialized_space_config = {
     "version": 1,
     "config": {
         "sample_questions": [
-            {"id": "sq0001", "question": ["Which POIs are currently in Critical congestion status?"]},
-            {"id": "sq0002", "question": ["What is the average latency by technology type?"]},
-            {"id": "sq0003", "question": ["Which suburbs have the highest risk of congestion over the next 6 months?"]},
-            {"id": "sq0004", "question": ["How many customers were affected by Critical incidents last month?"]},
-            {"id": "sq0005", "question": ["What percentage of customers are achieving their plan speeds?"]},
-            {"id": "sq0006", "question": ["What is the total estimated cost to upgrade all high-risk POIs?"]},
-            {"id": "sq0007", "question": ["Give me a summary of network health by state"]}
+            {"id": generate_id(), "question": ["Which POIs are currently in Critical congestion status?"]},
+            {"id": generate_id(), "question": ["What is the average latency by technology type?"]},
+            {"id": generate_id(), "question": ["Which suburbs have the highest risk of congestion over the next 6 months?"]},
+            {"id": generate_id(), "question": ["How many customers were affected by Critical incidents last month?"]},
+            {"id": generate_id(), "question": ["What percentage of customers are achieving their plan speeds?"]},
+            {"id": generate_id(), "question": ["What is the total estimated cost to upgrade all high-risk POIs?"]},
+            {"id": generate_id(), "question": ["Give me a summary of network health by state"]}
         ]
     },
     "data_sources": {
@@ -74,6 +79,24 @@ serialized_space_config = {
             {"identifier": "zivile.telco.incidents"},
             {"identifier": "zivile.telco.network_telemetry"},
             {"identifier": "zivile.telco.poi_infrastructure"}
+        ]
+    },
+    "instructions": {
+        "text_instructions": [
+            {
+                "id": generate_id(),
+                "content": [
+                    "You are an AI assistant for SouthernLink Networks, an Australian broadband provider.\n",
+                    "Technologies: FTTP (Fiber to Premises - best), FTTN (Fiber to Node), HFC (Hybrid Fiber Coaxial), Fixed Wireless\n",
+                    "POI = Point of Interconnect, aggregates customer connections\n",
+                    "Peak hours = 6-9 PM (hours 18-21)\n",
+                    "Congestion: >70% utilization = Warning, >85% = Critical\n",
+                    "FTTN typically has higher congestion than FTTP\n",
+                    "Round percentages to 1 decimal place\n",
+                    "Format currency as AUD with $ symbol\n",
+                    "For high risk analysis, filter risk_score IN ('Critical', 'High')"
+                ]
+            }
         ]
     }
 }
