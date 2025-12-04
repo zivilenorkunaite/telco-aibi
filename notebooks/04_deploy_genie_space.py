@@ -51,35 +51,19 @@ print(f"Workspace URL: {workspace_url}")
 # COMMAND ----------
 
 # Genie Space configuration
-import uuid
 
 # The serialized_space contains the internal configuration as a JSON string
 serialized_space_config = {
     "version": 1,
     "config": {
-        "instructions": """You are an AI assistant for SouthernLink Networks, an Australian broadband provider.
-
-DOMAIN KNOWLEDGE:
-- Technologies: FTTP (Fiber to Premises - best), FTTN (Fiber to Node), HFC (Hybrid Fiber Coaxial), Fixed Wireless
-- POI = Point of Interconnect, aggregates customer connections
-- Peak hours = 6-9 PM (hours 18-21)
-- Congestion: >70% = Warning, >85% = Critical
-- FTTN typically has higher congestion than FTTP
-
-RESPONSE GUIDELINES:
-- Include relevant metrics (counts, percentages, averages)
-- Round percentages to 1 decimal place
-- Format currency as AUD with $ symbol
-- For high risk analysis, filter risk_score IN ('Critical', 'High')
-- Peak hour analysis should focus on hours 18-21""",
         "sample_questions": [
-            {"id": str(uuid.uuid4())[:12], "question": ["Which POIs are currently in Critical congestion status?"]},
-            {"id": str(uuid.uuid4())[:12], "question": ["What is the average latency by technology type?"]},
-            {"id": str(uuid.uuid4())[:12], "question": ["Which suburbs have the highest risk of congestion over the next 6 months?"]},
-            {"id": str(uuid.uuid4())[:12], "question": ["How many customers were affected by Critical incidents last month?"]},
-            {"id": str(uuid.uuid4())[:12], "question": ["What percentage of customers are achieving their plan speeds?"]},
-            {"id": str(uuid.uuid4())[:12], "question": ["What's the total estimated cost to upgrade all high-risk POIs?"]},
-            {"id": str(uuid.uuid4())[:12], "question": ["Give me a summary of network health by state"]}
+            {"id": "sq0001", "question": ["Which POIs are currently in Critical congestion status?"]},
+            {"id": "sq0002", "question": ["What is the average latency by technology type?"]},
+            {"id": "sq0003", "question": ["Which suburbs have the highest risk of congestion over the next 6 months?"]},
+            {"id": "sq0004", "question": ["How many customers were affected by Critical incidents last month?"]},
+            {"id": "sq0005", "question": ["What percentage of customers are achieving their plan speeds?"]},
+            {"id": "sq0006", "question": ["What is the total estimated cost to upgrade all high-risk POIs?"]},
+            {"id": "sq0007", "question": ["Give me a summary of network health by state"]}
         ]
     },
     "data_sources": {
@@ -111,6 +95,8 @@ print(f"Genie Space: {genie_space_config['title']}")
 print(f"Parent Path: {genie_space_config['parent_path']}")
 print(f"Tables: {len(serialized_space_config['data_sources']['tables'])}")
 print(f"Sample Questions: {len(serialized_space_config['config']['sample_questions'])}")
+print(f"\n📦 Payload preview:")
+print(json.dumps(genie_space_config, indent=2))
 
 # COMMAND ----------
 
