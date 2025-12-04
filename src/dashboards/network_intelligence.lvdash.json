@@ -1,0 +1,211 @@
+{
+  "datasets": [
+    {
+      "name": "kpi_metrics",
+      "displayName": "KPI Metrics",
+      "query": "SELECT \n  COUNT(DISTINCT poi_id) as total_pois,\n  ROUND(AVG(utilization_pct), 1) as avg_utilization_pct,\n  SUM(CASE WHEN congestion_status = 'Critical' THEN 1 ELSE 0 END) as critical_pois,\n  SUM(CASE WHEN congestion_status = 'Warning' THEN 1 ELSE 0 END) as warning_pois,\n  ROUND(AVG(avg_latency_ms), 1) as avg_latency_ms,\n  SUM(active_connections) as total_active_connections\nFROM zivile.telco.network_telemetry\nWHERE timestamp >= current_timestamp() - INTERVAL 1 HOUR"
+    },
+    {
+      "name": "state_performance",
+      "displayName": "State Performance",
+      "query": "SELECT \n  state,\n  ROUND(AVG(utilization_pct), 1) as avg_utilization_pct,\n  COUNT(DISTINCT poi_id) as num_pois,\n  SUM(CASE WHEN congestion_status = 'Critical' THEN 1 ELSE 0 END) as critical_count\nFROM zivile.telco.network_telemetry\nWHERE timestamp >= current_timestamp() - INTERVAL 1 HOUR\nGROUP BY state\nORDER BY avg_utilization_pct DESC"
+    },
+    {
+      "name": "technology_performance",
+      "displayName": "Technology Performance",
+      "query": "SELECT \n  technology_type,\n  ROUND(AVG(utilization_pct), 1) as avg_utilization_pct,\n  ROUND(AVG(avg_latency_ms), 1) as avg_latency_ms,\n  ROUND(AVG(avg_download_speed_pct), 1) as avg_speed_achievement_pct\nFROM zivile.telco.network_telemetry\nWHERE timestamp >= current_timestamp() - INTERVAL 24 HOURS\nGROUP BY technology_type\nORDER BY avg_utilization_pct DESC"
+    },
+    {
+      "name": "hourly_trend",
+      "displayName": "Hourly Trend",
+      "query": "SELECT \n  hour,\n  ROUND(AVG(utilization_pct), 1) as avg_utilization_pct\nFROM zivile.telco.network_telemetry\nWHERE date >= current_date() - INTERVAL 7 DAYS\nGROUP BY hour\nORDER BY hour"
+    },
+    {
+      "name": "current_poi_status",
+      "displayName": "Current POI Status",
+      "query": "WITH latest AS (\n  SELECT *,\n    ROW_NUMBER() OVER (PARTITION BY poi_id ORDER BY timestamp DESC) as rn\n  FROM zivile.telco.network_telemetry\n)\nSELECT poi_id, suburb, state, technology_type, utilization_pct, congestion_status, avg_latency_ms\nFROM latest WHERE rn = 1\nORDER BY utilization_pct DESC\nLIMIT 15"
+    },
+    {
+      "name": "capacity_risk",
+      "displayName": "Capacity Risk Forecast",
+      "query": "SELECT \n  suburb, city, state, technology_type,\n  ROUND(current_peak_utilization_pct, 1) as current_pct,\n  ROUND(projected_utilization_pct, 1) as projected_6mo_pct,\n  risk_score,\n  estimated_upgrade_cost_aud as upgrade_cost,\n  ROUND(confidence_score * 100, 0) as confidence_pct\nFROM zivile.telco.capacity_forecasts\nWHERE months_ahead = 6 AND risk_score IN ('Critical', 'High')\nORDER BY projected_utilization_pct DESC"
+    },
+    {
+      "name": "recent_incidents",
+      "displayName": "Recent Incidents",
+      "query": "SELECT \n  incident_id, suburb, state, incident_type, severity,\n  incident_time, duration_hours, customers_affected, status\nFROM zivile.telco.incidents\nWHERE incident_time >= current_timestamp() - INTERVAL 30 DAYS\nORDER BY incident_time DESC\nLIMIT 20"
+    },
+    {
+      "name": "speed_achievement",
+      "displayName": "Speed Achievement",
+      "query": "SELECT \n  CASE \n    WHEN speed_achievement_pct >= 90 THEN 'Excellent (90%+)'\n    WHEN speed_achievement_pct >= 75 THEN 'Good (75-90%)'\n    WHEN speed_achievement_pct >= 50 THEN 'Fair (50-75%)'\n    ELSE 'Poor (<50%)'\n  END as speed_tier,\n  COUNT(*) as customer_count\nFROM zivile.telco.customer_usage\nWHERE usage_date >= current_date() - INTERVAL 7 DAYS\nGROUP BY 1\nORDER BY customer_count DESC"
+    }
+  ],
+  "pages": [
+    {
+      "name": "0ec6b341",
+      "displayName": "Network Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "aaa11111",
+            "textbox_spec": "# 🌐 SouthernLink Network Intelligence\nReal-time network health monitoring and capacity planning"
+          },
+          "position": {"x": 0, "y": 0, "width": 6, "height": 1}
+        },
+        {
+          "widget": {
+            "name": "counter1",
+            "queries": [{"name": "main", "query": {"datasetName": "kpi_metrics", "fields": [{"name": "total_pois", "expression": "`total_pois`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "counter", "encodings": {"value": {"fieldName": "total_pois", "displayName": "Total POIs"}}, "frame": {"showTitle": true, "title": "Total POIs"}}
+          },
+          "position": {"x": 0, "y": 1, "width": 1, "height": 1}
+        },
+        {
+          "widget": {
+            "name": "counter2",
+            "queries": [{"name": "main", "query": {"datasetName": "kpi_metrics", "fields": [{"name": "avg_utilization_pct", "expression": "`avg_utilization_pct`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "counter", "encodings": {"value": {"fieldName": "avg_utilization_pct", "displayName": "Avg Util %"}}, "frame": {"showTitle": true, "title": "Avg Utilization %"}}
+          },
+          "position": {"x": 1, "y": 1, "width": 1, "height": 1}
+        },
+        {
+          "widget": {
+            "name": "counter3",
+            "queries": [{"name": "main", "query": {"datasetName": "kpi_metrics", "fields": [{"name": "critical_pois", "expression": "`critical_pois`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "counter", "encodings": {"value": {"fieldName": "critical_pois", "displayName": "Critical"}}, "frame": {"showTitle": true, "title": "🔴 Critical"}}
+          },
+          "position": {"x": 2, "y": 1, "width": 1, "height": 1}
+        },
+        {
+          "widget": {
+            "name": "counter4",
+            "queries": [{"name": "main", "query": {"datasetName": "kpi_metrics", "fields": [{"name": "warning_pois", "expression": "`warning_pois`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "counter", "encodings": {"value": {"fieldName": "warning_pois", "displayName": "Warning"}}, "frame": {"showTitle": true, "title": "🟡 Warning"}}
+          },
+          "position": {"x": 3, "y": 1, "width": 1, "height": 1}
+        },
+        {
+          "widget": {
+            "name": "counter5",
+            "queries": [{"name": "main", "query": {"datasetName": "kpi_metrics", "fields": [{"name": "avg_latency_ms", "expression": "`avg_latency_ms`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "counter", "encodings": {"value": {"fieldName": "avg_latency_ms", "displayName": "Latency"}}, "frame": {"showTitle": true, "title": "Avg Latency (ms)"}}
+          },
+          "position": {"x": 4, "y": 1, "width": 1, "height": 1}
+        },
+        {
+          "widget": {
+            "name": "counter6",
+            "queries": [{"name": "main", "query": {"datasetName": "kpi_metrics", "fields": [{"name": "total_active_connections", "expression": "`total_active_connections`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "counter", "encodings": {"value": {"fieldName": "total_active_connections", "displayName": "Connections"}}, "frame": {"showTitle": true, "title": "Active Connections"}}
+          },
+          "position": {"x": 5, "y": 1, "width": 1, "height": 1}
+        },
+        {
+          "widget": {
+            "name": "chart_state",
+            "queries": [{"name": "main", "query": {"datasetName": "state_performance", "fields": [{"name": "state", "expression": "`state`"}, {"name": "avg_utilization_pct", "expression": "`avg_utilization_pct`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "avg_utilization_pct", "displayName": "Utilization %", "scale": {"type": "quantitative"}}, "y": {"fieldName": "state", "displayName": "State", "scale": {"type": "categorical"}}}, "frame": {"showTitle": true, "title": "📊 Utilization by State"}}
+          },
+          "position": {"x": 0, "y": 2, "width": 3, "height": 2}
+        },
+        {
+          "widget": {
+            "name": "chart_tech",
+            "queries": [{"name": "main", "query": {"datasetName": "technology_performance", "fields": [{"name": "technology_type", "expression": "`technology_type`"}, {"name": "avg_utilization_pct", "expression": "`avg_utilization_pct`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "avg_utilization_pct", "displayName": "Utilization %", "scale": {"type": "quantitative"}}, "y": {"fieldName": "technology_type", "displayName": "Technology", "scale": {"type": "categorical"}}}, "frame": {"showTitle": true, "title": "📡 Technology Performance"}}
+          },
+          "position": {"x": 3, "y": 2, "width": 3, "height": 2}
+        },
+        {
+          "widget": {
+            "name": "chart_trend",
+            "queries": [{"name": "main", "query": {"datasetName": "hourly_trend", "fields": [{"name": "hour", "expression": "`hour`"}, {"name": "avg_utilization_pct", "expression": "`avg_utilization_pct`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "line", "encodings": {"x": {"fieldName": "hour", "displayName": "Hour", "scale": {"type": "quantitative"}}, "y": {"fieldName": "avg_utilization_pct", "displayName": "Utilization %", "scale": {"type": "quantitative"}}}, "frame": {"showTitle": true, "title": "⏰ Peak Hour Trend"}}
+          },
+          "position": {"x": 0, "y": 4, "width": 6, "height": 2}
+        },
+        {
+          "widget": {
+            "name": "table_status",
+            "queries": [{"name": "main", "query": {"datasetName": "current_poi_status", "fields": [{"name": "poi_id", "expression": "`poi_id`"}, {"name": "suburb", "expression": "`suburb`"}, {"name": "state", "expression": "`state`"}, {"name": "technology_type", "expression": "`technology_type`"}, {"name": "utilization_pct", "expression": "`utilization_pct`"}, {"name": "congestion_status", "expression": "`congestion_status`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "table", "encodings": {"columns": [{"fieldName": "poi_id", "displayName": "POI"}, {"fieldName": "suburb", "displayName": "Suburb"}, {"fieldName": "state", "displayName": "State"}, {"fieldName": "technology_type", "displayName": "Tech"}, {"fieldName": "utilization_pct", "displayName": "Util %"}, {"fieldName": "congestion_status", "displayName": "Status"}]}, "frame": {"showTitle": true, "title": "🔍 Current POI Status"}}
+          },
+          "position": {"x": 0, "y": 6, "width": 6, "height": 3}
+        }
+      ]
+    },
+    {
+      "name": "1bc7c452",
+      "displayName": "Capacity Planning",
+      "layout": [
+        {
+          "widget": {
+            "name": "bbb22222",
+            "textbox_spec": "# 📈 Capacity Planning & Risk Forecast\nML-powered predictions for network capacity over the next 6 months"
+          },
+          "position": {"x": 0, "y": 0, "width": 6, "height": 1}
+        },
+        {
+          "widget": {
+            "name": "table_risk",
+            "queries": [{"name": "main", "query": {"datasetName": "capacity_risk", "fields": [{"name": "suburb", "expression": "`suburb`"}, {"name": "city", "expression": "`city`"}, {"name": "state", "expression": "`state`"}, {"name": "technology_type", "expression": "`technology_type`"}, {"name": "current_pct", "expression": "`current_pct`"}, {"name": "projected_6mo_pct", "expression": "`projected_6mo_pct`"}, {"name": "risk_score", "expression": "`risk_score`"}, {"name": "upgrade_cost", "expression": "`upgrade_cost`"}, {"name": "confidence_pct", "expression": "`confidence_pct`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "table", "encodings": {"columns": [{"fieldName": "suburb", "displayName": "Suburb"}, {"fieldName": "city", "displayName": "City"}, {"fieldName": "state", "displayName": "State"}, {"fieldName": "technology_type", "displayName": "Tech"}, {"fieldName": "current_pct", "displayName": "Current %"}, {"fieldName": "projected_6mo_pct", "displayName": "6-Mo %"}, {"fieldName": "risk_score", "displayName": "Risk"}, {"fieldName": "upgrade_cost", "displayName": "Cost (AUD)"}, {"fieldName": "confidence_pct", "displayName": "Conf %"}]}, "frame": {"showTitle": true, "title": "🔴 High Risk Suburbs - 6 Month Forecast"}}
+          },
+          "position": {"x": 0, "y": 1, "width": 6, "height": 5}
+        }
+      ]
+    },
+    {
+      "name": "2cd8d563",
+      "displayName": "Incidents",
+      "layout": [
+        {
+          "widget": {
+            "name": "ccc33333",
+            "textbox_spec": "# 🚨 Network Incidents\nHistorical incident tracking and analysis"
+          },
+          "position": {"x": 0, "y": 0, "width": 6, "height": 1}
+        },
+        {
+          "widget": {
+            "name": "table_incidents",
+            "queries": [{"name": "main", "query": {"datasetName": "recent_incidents", "fields": [{"name": "incident_id", "expression": "`incident_id`"}, {"name": "suburb", "expression": "`suburb`"}, {"name": "state", "expression": "`state`"}, {"name": "incident_type", "expression": "`incident_type`"}, {"name": "severity", "expression": "`severity`"}, {"name": "incident_time", "expression": "`incident_time`"}, {"name": "duration_hours", "expression": "`duration_hours`"}, {"name": "customers_affected", "expression": "`customers_affected`"}, {"name": "status", "expression": "`status`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "table", "encodings": {"columns": [{"fieldName": "incident_id", "displayName": "ID"}, {"fieldName": "suburb", "displayName": "Suburb"}, {"fieldName": "state", "displayName": "State"}, {"fieldName": "incident_type", "displayName": "Type"}, {"fieldName": "severity", "displayName": "Severity"}, {"fieldName": "incident_time", "displayName": "Time"}, {"fieldName": "duration_hours", "displayName": "Duration"}, {"fieldName": "customers_affected", "displayName": "Affected"}, {"fieldName": "status", "displayName": "Status"}]}, "frame": {"showTitle": true, "title": "📋 Recent Incidents (30 Days)"}}
+          },
+          "position": {"x": 0, "y": 1, "width": 6, "height": 5}
+        }
+      ]
+    },
+    {
+      "name": "3de9e674",
+      "displayName": "Customer Experience",
+      "layout": [
+        {
+          "widget": {
+            "name": "ddd44444",
+            "textbox_spec": "# 👥 Customer Experience\nSpeed achievement and service quality"
+          },
+          "position": {"x": 0, "y": 0, "width": 6, "height": 1}
+        },
+        {
+          "widget": {
+            "name": "chart_speed",
+            "queries": [{"name": "main", "query": {"datasetName": "speed_achievement", "fields": [{"name": "speed_tier", "expression": "`speed_tier`"}, {"name": "customer_count", "expression": "`customer_count`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "pie", "encodings": {"angle": {"fieldName": "customer_count", "displayName": "Customers"}, "color": {"fieldName": "speed_tier", "displayName": "Speed Tier", "scale": {"type": "categorical"}}}, "frame": {"showTitle": true, "title": "📶 Speed Achievement Distribution"}}
+          },
+          "position": {"x": 0, "y": 1, "width": 3, "height": 3}
+        },
+        {
+          "widget": {
+            "name": "chart_speed_tech",
+            "queries": [{"name": "main", "query": {"datasetName": "technology_performance", "fields": [{"name": "technology_type", "expression": "`technology_type`"}, {"name": "avg_speed_achievement_pct", "expression": "`avg_speed_achievement_pct`"}], "disaggregated": true}}],
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "avg_speed_achievement_pct", "displayName": "Speed Achievement %", "scale": {"type": "quantitative"}}, "y": {"fieldName": "technology_type", "displayName": "Technology", "scale": {"type": "categorical"}}}, "frame": {"showTitle": true, "title": "📊 Speed by Technology"}}
+          },
+          "position": {"x": 3, "y": 1, "width": 3, "height": 3}
+        }
+      ]
+    }
+  ]
+}
+

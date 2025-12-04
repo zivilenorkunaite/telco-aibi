@@ -1,0 +1,46 @@
+# Databricks Asset Bundle configuration
+# See https://docs.databricks.com/dev-tools/bundles/resources
+
+bundle:
+  name: telco-aibi-demo
+
+# Variable definitions
+variables:
+  catalog:
+    description: Unity Catalog name
+    default: zivile
+  schema:
+    description: Schema name for telco data
+    default: telco
+  warehouse_id:
+    description: SQL Warehouse ID for dashboard queries
+    default: ""
+
+# Workspace settings
+workspace:
+  root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+
+# Resources
+resources:
+  dashboards:
+    network_intelligence:
+      display_name: "SouthernLink Network Intelligence"
+      file_path: ./src/dashboards/network_intelligence.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+
+# Target environments
+targets:
+  # Development target - for local testing
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: ${DATABRICKS_HOST}
+
+  # Production target
+  prod:
+    mode: production
+    workspace:
+      host: ${DATABRICKS_HOST}
+    run_as:
+      user_name: ${workspace.current_user.userName}
