@@ -1,0 +1,11 @@
+# Dashboard resources configuration
+# See https://docs.databricks.com/dev-tools/bundles/resources#dashboards
+
+resources:
+  dashboards:
+    network_intelligence:
+      display_name: "SouthernLink Network Intelligence"
+      file_path: ../src/dashboards/network_intelligence.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+      embed_credentials: true
+
